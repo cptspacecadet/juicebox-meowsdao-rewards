@@ -9,7 +9,7 @@ import './libraries/juice-nft-rewards/abstract/JBNFTRewardDataSource.sol';
 import './libraries/juice-nft-rewards/interfaces/IJBTieredLimitedNFTRewardDataSource.sol';
 import './libraries/juice-nft-rewards/interfaces/ITokenSupplyDetails.sol';
 
-import './MeowGatewayUtil.sol';
+import './libraries/MeowGatewayUtil.sol';
 
 /**
   @title
