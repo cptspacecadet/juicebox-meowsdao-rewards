@@ -97,7 +97,6 @@ contract GatewayToken is ERC721, Ownable, ReentrancyGuard {
   IQuoter public constant uniswapQuoter = IQuoter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6);
   ISwapRouter public constant uniswapRouter = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
 
-
   IJBDirectory jbxDirectory;
   uint256 jbxProjectId;
 
@@ -149,6 +148,8 @@ contract GatewayToken is ERC721, Ownable, ReentrancyGuard {
     @param _maxSupply Max NFT supply.
     @param _unitPrice Price per token expressed in Ether.
     @param _mintAllowance Per-user mint cap.
+    @param _mintPeriodStart Start of the minting period in seconds.
+    @param _mintPeriodEnd End of the minting period in seconds.
    */
   constructor(
     string memory _name,

@@ -4,7 +4,7 @@ import { ethers } from 'hardhat';
 
 import { deployMockContract } from '@ethereum-waffle/mock-contract';
 
-import jbDirectory from '../node_modules/@jbx-protocol/contracts-v2/deployments/mainnet/jbDirectory.json';
+import jbDirectory from '../../node_modules/@jbx-protocol/contracts-v2/deployments/mainnet/jbDirectory.json';
 
 describe('MEOWs DAO Token Mint Tests: JBX Delegate', function () {
     const PROJECT_ID = 2;
