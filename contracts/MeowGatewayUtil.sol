@@ -41,7 +41,7 @@ library MeowGatewayUtil {
   }
 
   function specialNakedMask() private pure returns (uint8[12] memory) {
-    return [127, 63, 15, 15, 63, 15, 15, 31, 31, 63, 1, 1];
+    return [127, 63, 15, 15, 63, 31, 15, 31, 31, 63, 1, 1];
   }
 
   function nakedOffsets() private pure returns (uint8[12] memory) {
@@ -53,7 +53,7 @@ library MeowGatewayUtil {
   }
 
   function nakedMask() private pure returns (uint8[12] memory) {
-    return [127, 63, 15, 15, 63, 15, 15, 31, 31, 63, 1, 1];
+    return [127, 63, 15, 15, 63, 31, 15, 31, 31, 63, 1, 1];
   }
 
   function tShirtOffsets() private pure returns (uint8[12] memory) {
