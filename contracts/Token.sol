@@ -149,7 +149,7 @@ contract Token is ERC721, AccessControl, ReentrancyGuard {
   /**
     @dev If the token has been set as "revealed", returned uri will append the token id
     */
-  function tokenURI(uint256 _tokenId) public view override returns (string memory uri) {
+  function tokenURI(uint256 _tokenId) virtual public view override returns (string memory uri) {
     uri = !isRevealed ? baseUri : string(abi.encodePacked(baseUri, _tokenId.toString()));
   }
 
@@ -220,7 +220,7 @@ contract Token is ERC721, AccessControl, ReentrancyGuard {
   // -------------------- priviledged transactions --------------------- //
   //*********************************************************************//
 
-  function mintFor(address _account) external onlyRole(MINTER_ROLE) {
+  function mintFor(address _account) virtual external onlyRole(MINTER_ROLE) {
     unchecked {
       ++totalSupply;
     }
