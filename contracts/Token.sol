@@ -82,12 +82,12 @@ contract Token is ERC721, AccessControl, ReentrancyGuard {
 
     @dev changes the way tokenUri(uint256) works.
    */
-  bool isRevealed;
+  bool public isRevealed;
 
   /**
     @notice Pause minting flag
    */
-  bool isPaused;
+  bool public isPaused;
 
   //*********************************************************************//
   // -------------------------- constructor ---------------------------- //
@@ -247,7 +247,7 @@ contract Token is ERC721, AccessControl, ReentrancyGuard {
     @dev This operation can only be executed once.
    */
   function setProvenanceHash(string memory _provenanceHash) external onlyRole(DEFAULT_ADMIN_ROLE) {
-    if (bytes(provenanceHash).length == 0) {
+    if (bytes(provenanceHash).length != 0) {
       revert PROVENANCE_REASSIGNMENT();
     }
     provenanceHash = _provenanceHash;

@@ -5,8 +5,8 @@ import fetch from 'node-fetch';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { smock } from '@defi-wonderland/smock';
 
-import jbDirectory from '../../node_modules/@jbx-protocol/contracts-v2/deployments/mainnet/jbDirectory.json';
-import jbETHPaymentTerminal from '../../node_modules/@jbx-protocol/contracts-v2/deployments/mainnet/jbETHPaymentTerminal.json';
+import jbDirectory from '@jbx-protocol/contracts-v2/deployments/mainnet/jbDirectory.json';
+import jbETHPaymentTerminal from '@jbx-protocol/contracts-v2/deployments/mainnet/jbETHPaymentTerminal.json';
 
 async function deployMockContractFromAddress(contractAddress: string, etherscanKey: string) {
     const abi = await fetch(`https://api.etherscan.io/api?module=contract&action=getabi&address=${contractAddress}&apikey=${etherscanKey}`)
@@ -18,6 +18,8 @@ async function deployMockContractFromAddress(contractAddress: string, etherscanK
 
 describe('MEOWs DAO Token Mint Tests: Ether', () => {
     const tokenUnitPrice = ethers.utils.parseEther('0.0125');
+    const tokenBaseUri = 'ipfs://hidden';
+    const tokenMaxSupply = 8;
 
     let deployer: SignerWithAddress;
     let accounts: SignerWithAddress[];
@@ -26,10 +28,8 @@ describe('MEOWs DAO Token Mint Tests: Ether', () => {
     before(async () => {
         const tokenName = 'Token';
         const tokenSymbol = 'TKN';
-        const tokenBaseUri = 'ipfs://hidden';
         const tokenContractUri = 'ipfs://metadata';
         const jbxProjectId = 99;
-        const tokenMaxSupply = 8;
         const tokenMintAllowance = 6;
         const mintPeriodStart = 0;
         const mintPeriodEnd = 0;
@@ -91,8 +91,16 @@ describe('MEOWs DAO Token Mint Tests: Ether', () => {
     });
 
     it('User mints third', async () => {
-        await expect(token.connect(accounts[0])['mint()']({value: 0}))
-            .to.emit(token, 'Transfer');
+        const tx = await token.connect(accounts[0])['mint()']({value: 0});
+        await expect(tx).to.emit(token, 'Transfer');
+
+        const receipt = await tx.wait();
+        const tokenId = receipt.events?.filter((f: any) => f.event === 'Transfer')[0]['args']['id'].toString();
+        expect(Number(tokenId)).to.be.greaterThan(0);
+
+        expect(await token.ownerOf(tokenId)).to.equal(accounts[0].address)
+        expect(await token.totalSupply()).to.equal(3);
+        expect(await token.maxSupply()).to.equal(tokenMaxSupply);
     });
 
     it('User mints 4-6', async () => {
@@ -116,7 +124,12 @@ describe('MEOWs DAO Token Mint Tests: Ether', () => {
     });
 
     it('Another user mints the rest', async () => {
-        await expect(token.connect(accounts[1])['mint()']({value: tokenUnitPrice})).to.emit(token, 'Transfer');
+        const tx = await token.connect(accounts[1])['mint()']({value: tokenUnitPrice})
+        await expect(tx).to.emit(token, 'Transfer');
+        const receipt = await tx.wait();
+        const tokenId = receipt.events?.filter((f: any) => f.event === 'Transfer')[0]['args']['id'].toString();
+        expect(await token.tokenURI(tokenId)).to.equal(tokenBaseUri);
+
         await expect(token.connect(accounts[1])['mint()']({value: 0})).to.be.revertedWith('SUPPLY_EXHAUSTED()');
     });
 

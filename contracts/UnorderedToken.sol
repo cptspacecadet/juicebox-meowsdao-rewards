@@ -342,22 +342,24 @@ contract UnorderedToken is Token {
     _mint(_account, tokenId);
   }
 
-  function updatePaymentTokenList(address _token, bool _accept) public onlyRole(MINTER_ROLE) {
+  function updatePaymentTokenList(address _token, bool _accept) public onlyRole(DEFAULT_ADMIN_ROLE) {
     acceptableTokens[_token] = _accept;
   }
 
   function updatePaymentTokenParams(bool _immediateTokenLiquidation, uint256 _tokenPriceMargin)
     public
-    onlyRole(MINTER_ROLE)
+    onlyRole(DEFAULT_ADMIN_ROLE)
   {
-    if (tokenPriceMargin > 10_000) {
+    if (_tokenPriceMargin > 10_000) {
       revert INVALID_MARGIN();
     }
     tokenPriceMargin = _tokenPriceMargin;
     immediateTokenLiquidation = _immediateTokenLiquidation;
   }
 
-  // TODO: consider breaking this out
+  /**
+   * @notice Generates a token id based on provided parameters. Id range is 1...(maxSupply + 1), 0 is considered invalid and never returned.
+   */
   function generateTokenId(
     address _account,
     uint256 _amount,
@@ -376,9 +378,9 @@ contract UnorderedToken is Token {
       0 // sqrtPriceLimitX96
     );
 
-    tokenId = uint256(keccak256(abi.encodePacked(_account, _blockNumber, ethPrice))) % maxSupply;
-    while (_ownerOf[tokenId] != address(0)) {
-      tokenId = ++tokenId % maxSupply;
+    tokenId = uint256(keccak256(abi.encodePacked(_account, _blockNumber, ethPrice))) % (maxSupply + 1);
+    while (tokenId == 0 || _ownerOf[tokenId] != address(0)) {
+      tokenId = ++tokenId % (maxSupply + 1);
     }
   }
 }

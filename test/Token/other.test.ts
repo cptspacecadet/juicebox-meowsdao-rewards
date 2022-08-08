@@ -2,7 +2,6 @@ import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import fetch from 'node-fetch';
 
-import { getContractAddress } from '@ethersproject/address';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { smock } from '@defi-wonderland/smock';
 
@@ -17,24 +16,18 @@ async function deployMockContractFromAddress(contractAddress: string, etherscanK
     return smock.fake(abi, {address: contractAddress});
 }
 
-async function getNextContractAddress(deployer: SignerWithAddress) {
-   return getContractAddress({ from: deployer.address, nonce: await deployer.getTransactionCount() });
-}
-
-describe('MEOWs DAO Token Mint Tests: DAI', () => {
+describe('Simple Token "Other" Tests', () => {
     const tokenUnitPrice = ethers.utils.parseEther('0.0125');
+    const tokenBaseUri = 'ipfs://hidden';
+    const tokenContractUri = 'ipfs://metadata';
 
     let deployer: SignerWithAddress;
     let accounts: SignerWithAddress[];
     let token: any;
-    let mockDai: any;
-    let mockWeth: any;
 
     before(async () => {
         const tokenName = 'Token';
         const tokenSymbol = 'TKN';
-        const tokenBaseUri = 'ipfs://hidden';
-        const tokenContractUri = 'ipfs://metadata';
         const jbxProjectId = 99;
         const tokenMaxSupply = 8;
         const tokenMintAllowance = 6;
@@ -45,29 +38,16 @@ describe('MEOWs DAO Token Mint Tests: DAI', () => {
 
         const mockUniswapQuoter = await deployMockContractFromAddress('0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6', process.env.ETHERSCAN_KEY || '');
         await mockUniswapQuoter.quoteExactInputSingle.returns('1211000000000000000000');
-        await mockUniswapQuoter.quoteExactOutputSingle.returns('1211000000000000000000');
 
         const mockUniswapRouter = await deployMockContractFromAddress('0xE592427A0AEce92De3Edee1F18E0157C05861564', process.env.ETHERSCAN_KEY || '');
-
-        mockDai = await deployMockContractFromAddress('0x6B175474E89094C44Da98b954EedeAC495271d0F', process.env.ETHERSCAN_KEY || '');
-        mockDai.transferFrom.returns(true);
-        mockDai.approve.returns(true);
-
-        mockWeth = await deployMockContractFromAddress('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', process.env.ETHERSCAN_KEY || '');
-        mockWeth.withdraw.returns();
 
         const jbxJbTokensEth = '0x000000000000000000000000000000000000EEEe';
         const ethTerminal = await smock.fake(jbETHPaymentTerminal.abi);
         await ethTerminal.pay.returns(0);
 
-        const daiTerminal = await smock.fake(jbETHPaymentTerminal.abi);
-        await daiTerminal.pay.returns(0);
-
         const mockDirectory = await smock.fake(jbDirectory.abi);
         await mockDirectory.isTerminalOf.whenCalledWith(jbxProjectId, ethTerminal.address).returns(true);
         await mockDirectory.primaryTerminalOf.whenCalledWith(jbxProjectId, jbxJbTokensEth).returns(ethTerminal.address);
-        await mockDirectory.isTerminalOf.whenCalledWith(jbxProjectId, daiTerminal.address).returns(true);
-        await mockDirectory.primaryTerminalOf.whenCalledWith(jbxProjectId, mockDai.address).returns(daiTerminal.address);
 
         const tokenFactory = await ethers.getContractFactory('UnorderedToken', deployer);
         token = await tokenFactory.connect(deployer).deploy(
@@ -85,17 +65,58 @@ describe('MEOWs DAO Token Mint Tests: DAI', () => {
         );
     });
 
-    it('User mints second: fail due to unapproved token', async () => {
-        await expect(token.connect(accounts[0])['mint()']({value: 0})).to.emit(token, 'Transfer');
+    it('setPause', async () => {
+        await expect(token.connect(accounts[0]).setPause(true)).to.be.reverted;
 
-        await expect(token.connect(accounts[0])['mint(address)'](mockDai.address, {value: tokenUnitPrice}))
-            .to.be.revertedWith('UNAPPROVED_TOKEN()');
+        expect(await token.isPaused()).to.equal(false);
+        await token.connect(deployer).setPause(true);
+        expect(await token.isPaused()).to.equal(true);
     });
 
-    it('User mints second', async () => {
-        await token.connect(deployer).updatePaymentTokenList(mockDai.address, true);
+    it('addMinter', async () => {
+        await expect(token.connect(accounts[0]).addMinter(accounts[0].address)).to.be.reverted;
+        await expect(token.connect(deployer).addMinter(accounts[0].address)).to.not.be.reverted;
+    });
 
-        await expect(token.connect(accounts[0])['mint(address)'](mockDai.address, {value: tokenUnitPrice}))
-            .to.emit(token, 'Transfer');
+    it('removeMinter', async () => {
+        await expect(token.connect(accounts[0]).removeMinter(accounts[0].address)).to.be.reverted;
+        await expect(token.connect(deployer).removeMinter(accounts[0].address)).to.not.be.reverted;
+    });
+
+    it('setProvenanceHash', async () => {
+        await expect(token.connect(accounts[0]).setProvenanceHash('0xc0ffee')).to.be.reverted;
+        await expect(token.connect(deployer).setProvenanceHash('0xc0ffee')).to.not.be.reverted;
+        await expect(token.connect(deployer).setProvenanceHash('0xdeadbeef')).to.be.revertedWith('PROVENANCE_REASSIGNMENT()');
+    });
+
+    it('setContractURI', async () => {
+        await expect(token.connect(accounts[0]).setContractURI('ipfs://')).to.be.reverted;
+
+        expect(await token.contractURI()).to.equal(tokenContractUri);
+        await expect(token.connect(deployer).setContractURI('ipfs://')).to.not.be.reverted;
+    });
+
+    it('updateMintPeriod', async () => {
+        await expect(token.connect(accounts[0]).updateMintPeriod(1, 1)).to.be.reverted;
+        await expect(token.connect(deployer).updateMintPeriod(1, 1)).to.not.be.reverted;
+    });
+
+    it('updateUnitPrice', async () => {
+        await expect(token.connect(accounts[0]).updateUnitPrice(tokenUnitPrice)).to.be.reverted;
+        await expect(token.connect(deployer).updateUnitPrice(tokenUnitPrice)).to.not.be.reverted;
+    });
+
+    it('setBaseURI', async () => {
+        const revealedBaseUri = 'ipfs://blah/';
+        const tokenId = 1;
+
+        await expect(token.connect(accounts[0]).setBaseURI(revealedBaseUri, true)).to.be.reverted;
+
+        expect(await token.tokenURI(tokenId)).to.equal(tokenBaseUri);
+
+        await expect(token.connect(deployer).setBaseURI(revealedBaseUri, true)).to.not.be.reverted;
+        expect(await token.tokenURI(tokenId)).to.equal(`${revealedBaseUri}${tokenId}`);
+
+        await expect(token.connect(deployer).setBaseURI(tokenBaseUri, false)).to.be.revertedWith('ALREADY_REVEALED()');
     });
 });

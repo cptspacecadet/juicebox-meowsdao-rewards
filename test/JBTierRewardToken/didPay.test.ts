@@ -4,7 +4,7 @@ import { ethers } from 'hardhat';
 
 import { deployMockContract } from '@ethereum-waffle/mock-contract';
 
-import jbDirectory from '../../node_modules/@jbx-protocol/contracts-v2/deployments/mainnet/jbDirectory.json';
+import jbDirectory from '@jbx-protocol/contracts-v2/deployments/mainnet/jbDirectory.json';
 
 describe('MEOWs DAO Token Mint Tests: JBX Delegate', function () {
     const PROJECT_ID = 2;
@@ -14,6 +14,7 @@ describe('MEOWs DAO Token Mint Tests: JBX Delegate', function () {
     let projectTerminal: any;
     let beneficiary: any;
     let jbTierRewardToken: any;
+    let meowGatewayUtilLibrary: any;
 
     before(async () => {
         let deployer;
@@ -27,7 +28,7 @@ describe('MEOWs DAO Token Mint Tests: JBX Delegate', function () {
         await mockJbDirectory.mock.isTerminalOf.withArgs(PROJECT_ID, beneficiary.address).returns(false);
 
         const meowGatewayUtilFactory = await ethers.getContractFactory('MeowGatewayUtil', deployer);
-        const meowGatewayUtilLibrary = await meowGatewayUtilFactory.connect(deployer).deploy();
+        meowGatewayUtilLibrary = await meowGatewayUtilFactory.connect(deployer).deploy();
 
         const jbTierRewardTokenFactory = await ethers.getContractFactory('JBTierRewardToken', {
             libraries: { MeowGatewayUtil: meowGatewayUtilLibrary.address },
@@ -118,6 +119,11 @@ describe('MEOWs DAO Token Mint Tests: JBX Delegate', function () {
             // content = JSON.parse(content)['image'];
             // content = Buffer.from(content.slice(26), 'base64').toString('utf-8');
             fs.writeFileSync(`tier-${i + 1}-token.txt`, content);
+
+            const traits = await jbTierRewardToken.tokenTraits(tokenId);
+            await meowGatewayUtilLibrary.validateTraits(traits);
         }
     });
 });
+
+// const blocktime = (await ethers.provider.getBlock('latest')).timestamp + 1;

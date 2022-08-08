@@ -5,8 +5,8 @@ import fetch from 'node-fetch';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { smock } from '@defi-wonderland/smock';
 
-import jbDirectory from '../../node_modules/@jbx-protocol/contracts-v2/deployments/mainnet/jbDirectory.json';
-import jbETHPaymentTerminal from '../../node_modules/@jbx-protocol/contracts-v2/deployments/mainnet/jbETHPaymentTerminal.json';
+import jbDirectory from '@jbx-protocol/contracts-v2/deployments/mainnet/jbDirectory.json';
+import jbETHPaymentTerminal from '@jbx-protocol/contracts-v2/deployments/mainnet/jbETHPaymentTerminal.json';
 
 import * as MerkleHelper from '../components/MerkleHelper';
 
