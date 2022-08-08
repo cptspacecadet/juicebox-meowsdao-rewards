@@ -4,13 +4,17 @@
 
 A collection of NFTs with various features that interface with Juicebox treasury contracts.
 
-### Token
-
-A "regular" NFT which allows minting of a limited set of NFTs with ipfs-bound assets and metadata.
-
 ### JBTierRewardToken
 
-A Juicebox contribution reward NFT modeled on the [JBX Contribution NFT Reward Mechanism](https://github.com/jbx-protocol/juice-nft-rewards).
+A Juicebox contribution reward NFT modeled on the [JBX Contribution NFT Reward Mechanism](https://github.com/jbx-protocol/juice-nft-rewards). This contract allows for tiered minting of trait-based NFTs.
+
+### Token
+
+A "regular" ERC721 NFT which allows minting of a limited set of NFTs with ipfs-bound assets and metadata. This contract adds a mint period.
+
+### UnorderedToken
+
+An ERC721 NFT which allows minting of a limited set of NFTs with ipfs-bound assets and metadata. Proceeds from the initial sale got to a Juicebox project. This contract optionally supports payment in ERC20 tokens rather than Ether for which there is a Uniswap pool. Other features include Merkle-tree mints, mint period and non-sequential token ids.
 
 ## Commands
 
