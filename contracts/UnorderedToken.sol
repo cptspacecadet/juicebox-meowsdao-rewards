@@ -91,7 +91,6 @@ contract UnorderedToken is Token {
      _unitPrice,
     _mintAllowance,
     _mintPeriodStart, _mintPeriodEnd) {
-    
   }
 
   //*********************************************************************//
@@ -335,12 +334,12 @@ contract UnorderedToken is Token {
     merkleRoot = _merkleRoot;
   }
 
-  function mintFor(address _account) public override onlyRole(MINTER_ROLE) {
-    uint256 tokenId = generateTokenId(_account, unitPrice, block.number);
-    _mint(_account, tokenId);
+  function mintFor(address _account) public override onlyRole(MINTER_ROLE) returns (uint256 tokenId) {
+    tokenId = generateTokenId(_account, unitPrice, block.number);
     unchecked {
       ++totalSupply;
     }
+    _mint(_account, tokenId);
   }
 
   function updatePaymentTokenList(address _token, bool _accept) public onlyRole(MINTER_ROLE) {

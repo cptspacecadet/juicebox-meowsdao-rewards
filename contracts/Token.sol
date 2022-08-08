@@ -220,11 +220,12 @@ contract Token is ERC721, AccessControl, ReentrancyGuard {
   // -------------------- priviledged transactions --------------------- //
   //*********************************************************************//
 
-  function mintFor(address _account) virtual external onlyRole(MINTER_ROLE) {
+  function mintFor(address _account) virtual external onlyRole(MINTER_ROLE) returns (uint256 tokenId) {
     unchecked {
       ++totalSupply;
     }
-    _mint(_account, totalSupply);
+    tokenId = totalSupply;
+    _mint(_account, tokenId);
     
   }
 
