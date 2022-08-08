@@ -9,7 +9,7 @@ import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import '@openzeppelin/contracts/utils/Strings.sol';
 import '@rari-capital/solmate/src/tokens/ERC721.sol';
 
-contract GatewayToken is ERC721, AccessControl, ReentrancyGuard {
+contract Token is ERC721, AccessControl, ReentrancyGuard {
   using Strings for uint256;
 
   bytes32 public constant MINTER_ROLE = keccak256('MINTER_ROLE');
@@ -162,7 +162,7 @@ contract GatewayToken is ERC721, AccessControl, ReentrancyGuard {
 
     @dev Proceeds are forwarded to the default jbx terminal for the project id set in the constructor. Payment will fail if the terminal is not set in the jbx directory.
    */
-  function mint() external payable nonReentrant onlyDuringMintPeriod returns (uint256 tokenId) {
+  function mint() virtual external payable nonReentrant onlyDuringMintPeriod returns (uint256 tokenId) {
     if (totalSupply == maxSupply) {
       revert SUPPLY_EXHAUSTED();
     }

@@ -19,7 +19,7 @@ interface IWETH9 is IERC20 {
   function withdraw(uint256) external;
 }
 
-contract GatewayToken is ERC721, Ownable, ReentrancyGuard {
+contract UnorderedToken is ERC721, Ownable, ReentrancyGuard {
   using Strings for uint256;
 
   /**
