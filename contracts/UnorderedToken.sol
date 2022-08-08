@@ -1,17 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.6;
 
-import '@jbx-protocol/contracts-v2/contracts/interfaces/IJBDirectory.sol';
-import '@jbx-protocol/contracts-v2/contracts/interfaces/IJBPaymentTerminal.sol';
-import '@jbx-protocol/contracts-v2/contracts/libraries/JBTokens.sol';
-import '@openzeppelin/contracts/access/Ownable.sol';
-import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import '@openzeppelin/contracts/utils/Strings.sol';
 import '@openzeppelin/contracts/utils/cryptography/MerkleProof.sol';
-import '@rari-capital/solmate/src/tokens/ERC721.sol';
 import '@uniswap/v3-periphery/contracts/interfaces/IQuoter.sol';
 import '@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol';
+
+import './Token.sol';
 
 interface IWETH9 is IERC20 {
   function deposit() external payable;
@@ -19,38 +14,8 @@ interface IWETH9 is IERC20 {
   function withdraw(uint256) external;
 }
 
-contract UnorderedToken is ERC721, Ownable, ReentrancyGuard {
+contract UnorderedToken is Token {
   using Strings for uint256;
-
-  /**
-    @notice NFT provenance hash reassignment prohibited.
-   */
-  error PROVENANCE_REASSIGNMENT();
-
-  /**
-    @notice Base URI assignment along with the "revealed" flag can only be done once.
-   */
-  error ALREADY_REVEALED();
-
-  /**
-    @notice User mint allowance exhausted.
-   */
-  error ALLOWANCE_EXHAUSTED();
-
-  /**
-    @notice mint() function received an incorrect payment, expected payment returned as argument.
-   */
-  error INCORRECT_PAYMENT(uint256);
-
-  /**
-    @notice Token supply exhausted, all tokens have been minted.
-   */
-  error SUPPLY_EXHAUSTED();
-
-  /**
-    @notice Various payment failures caused by incorrect contract condiguration.
-   */
-  error PAYMENT_FAILURE();
 
   /**
     @notice User attempted to pay for the mint using an unapproved token.
@@ -77,55 +42,10 @@ contract UnorderedToken is ERC721, Ownable, ReentrancyGuard {
    */
   error CLAIMS_EXHAUSTED();
 
-  error MINT_NOT_STARTED();
-  error MINT_CONCLUDED();
-
-  modifier onlyDuringMintPeriod() {
-    if (mintPeriodStart != 0 && mintPeriodStart > block.timestamp) {
-      revert MINT_NOT_STARTED();
-    }
-
-    if (mintPeriodEnd != 0 && mintPeriodEnd < block.timestamp) {
-      revert MINT_CONCLUDED();
-    }
-
-    _;
-  }
-
   address public constant WETH9 = address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
   address public constant DAI = address(0x6B175474E89094C44Da98b954EedeAC495271d0F);
   IQuoter public constant uniswapQuoter = IQuoter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6);
   ISwapRouter public constant uniswapRouter = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
-
-  IJBDirectory jbxDirectory;
-  uint256 jbxProjectId;
-
-  string public baseUri;
-  string public contractUri;
-  uint256 public maxSupply;
-  uint256 public unitPrice;
-  uint256 public immutable mintAllowance;
-  string public provenanceHash;
-  mapping(address => bool) public acceptableTokens;
-  bool immediateTokenLiquidation;
-  uint256 tokenPriceMargin = 10_000; // in bps
-  uint128 public mintPeriodStart;
-  uint128 public mintPeriodEnd;
-
-  mapping(address => uint256) public claimedMerkleAllowance;
-  uint256 public totalSupply;
-
-  /**
-    @notice Revealed flag.
-
-    @dev changes the way tokenUri(uint256) works.
-   */
-  bool isRevealed;
-
-  /**
-    @notice Pause minting flag
-   */
-  bool isPaused;
 
   /**
     @notice Merkle root data.
@@ -163,28 +83,20 @@ contract UnorderedToken is ERC721, Ownable, ReentrancyGuard {
     uint256 _mintAllowance,
     uint128 _mintPeriodStart,
     uint128 _mintPeriodEnd
-  ) ERC721(_name, _symbol) {
-    baseUri = _baseUri;
-    contractUri = _contractUri;
-    jbxDirectory = _jbxDirectory;
-    jbxProjectId = _jbxProjectId;
-    maxSupply = _maxSupply;
-    unitPrice = _unitPrice;
-    mintAllowance = _mintAllowance;
-    mintPeriodStart = _mintPeriodStart;
-    mintPeriodEnd = _mintPeriodEnd;
+  ) Token(_name, _symbol, _baseUri,
+     _contractUri,
+     _jbxProjectId,
+     _jbxDirectory,
+     _maxSupply,
+     _unitPrice,
+    _mintAllowance,
+    _mintPeriodStart, _mintPeriodEnd) {
+    
   }
 
   //*********************************************************************//
   // ------------------------- external views -------------------------- //
   //*********************************************************************//
-
-  /**
-    @notice Get contract metadata to make OpenSea happy.
-    */
-  function contractURI() public view returns (string memory) {
-    return contractUri;
-  }
 
   /**
     @dev If the token has been set as "revealed", returned uri will append the token id
@@ -202,7 +114,7 @@ contract UnorderedToken is ERC721, Ownable, ReentrancyGuard {
 
     @dev Proceeds are forwarded to the default jbx terminal for the project id set in the constructor. Payment will fail if the terminal is not set in the jbx directory.
    */
-  function mint() external payable nonReentrant onlyDuringMintPeriod returns (uint256 tokenId) {
+  function mint() override external payable nonReentrant onlyDuringMintPeriod returns (uint256 tokenId) {
     if (totalSupply == maxSupply) {
       revert SUPPLY_EXHAUSTED();
     }
@@ -250,10 +162,10 @@ contract UnorderedToken is ERC721, Ownable, ReentrancyGuard {
     }
 
     tokenId = generateTokenId(msg.sender, msg.value, block.number);
-    _mint(msg.sender, tokenId);
     unchecked {
       ++totalSupply;
     }
+    _mint(msg.sender, tokenId);
   }
 
   /**
@@ -419,15 +331,11 @@ contract UnorderedToken is ERC721, Ownable, ReentrancyGuard {
   // -------------------- priviledged transactions --------------------- //
   //*********************************************************************//
 
-  function setPause(bool pause) external onlyOwner {
-    isPaused = pause;
-  }
-
-  function setMerkleRoot(bytes32 _merkleRoot) external onlyOwner {
+  function setMerkleRoot(bytes32 _merkleRoot) external onlyRole(DEFAULT_ADMIN_ROLE) {
     merkleRoot = _merkleRoot;
   }
 
-  function mintFor(address _account) public onlyOwner {
+  function mintFor(address _account) public override onlyRole(MINTER_ROLE) {
     uint256 tokenId = generateTokenId(_account, unitPrice, block.number);
     _mint(_account, tokenId);
     unchecked {
@@ -435,71 +343,19 @@ contract UnorderedToken is ERC721, Ownable, ReentrancyGuard {
     }
   }
 
-  /**
-    @notice Set provenance hash.
-
-    @dev This operation can only be executed once.
-   */
-  function setProvenanceHash(string memory _provenanceHash) public onlyOwner {
-    if (bytes(provenanceHash).length == 0) {
-      revert PROVENANCE_REASSIGNMENT();
-    }
-    provenanceHash = _provenanceHash;
-  }
-
-  /**
-    @notice Metadata URI for token details in OpenSea format.
-   */
-  function setContractURI(string memory _contractUri) public onlyOwner {
-    contractUri = _contractUri;
-  }
-
-  function updatePaymentTokenList(address _token, bool _accept) public onlyOwner {
+  function updatePaymentTokenList(address _token, bool _accept) public onlyRole(MINTER_ROLE) {
     acceptableTokens[_token] = _accept;
   }
 
   function updatePaymentTokenParams(bool _immediateTokenLiquidation, uint256 _tokenPriceMargin)
     public
-    onlyOwner
+    onlyRole(MINTER_ROLE)
   {
     if (tokenPriceMargin > 10_000) {
       revert INVALID_MARGIN();
     }
     tokenPriceMargin = _tokenPriceMargin;
     immediateTokenLiquidation = _immediateTokenLiquidation;
-  }
-
-  /**
-    @notice Allows adjustment of minting period.
-
-    @param _mintPeriodStart New minting period start.
-    @param _mintPeriodEnd New minting period end.
-   */
-  function updateMintPeriod(uint128 _mintPeriodStart, uint128 _mintPeriodEnd) public onlyOwner {
-    mintPeriodStart = _mintPeriodStart;
-    mintPeriodEnd = _mintPeriodEnd;
-  }
-
-  function updateUnitPrice(uint256 _unitPrice) public onlyOwner {
-    unitPrice = _unitPrice;
-  }
-
-  /**
-    @notice Set NFT metadata base URI.
-
-    @dev URI must include the trailing slash.
-    */
-  function setBaseURI(string memory _baseUri, bool _reveal) public onlyOwner {
-    if (isRevealed && !_reveal) {
-      revert ALREADY_REVEALED();
-    }
-
-    baseUri = _baseUri;
-    isRevealed = _reveal;
-  }
-
-  function supportsInterface(bytes4 interfaceId) public view override returns (bool) {
-    return super.supportsInterface(interfaceId);
   }
 
   // TODO: consider breaking this out
