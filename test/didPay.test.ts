@@ -21,7 +21,7 @@ describe('MEOWs DAO Token Mint Tests: JBX Delegate', function () {
 
         [deployer, projectTerminal, beneficiary, ...accounts] = await ethers.getSigners();
 
-        const mockJbDirectory = await deployMockContract(deployer, jbDirectory.abi)
+        const mockJbDirectory = await deployMockContract(deployer, jbDirectory.abi);
 
         await mockJbDirectory.mock.isTerminalOf.withArgs(PROJECT_ID, projectTerminal.address).returns(true);
         await mockJbDirectory.mock.isTerminalOf.withArgs(PROJECT_ID, beneficiary.address).returns(false);
@@ -92,9 +92,10 @@ describe('MEOWs DAO Token Mint Tests: JBX Delegate', function () {
 
     it('Mint token', async () => {
         const baseContribution = ethers.utils.parseEther('0.00001');
-        for (let i = 0; i != 5; i++) {
+        for (let i = 0; i != 6; i++) {
             const contribution = baseContribution.add(ethers.utils.parseEther(`${i}`));
-            await expect(jbTierRewardToken.connect(projectTerminal).didPay({
+
+            const tx = await jbTierRewardToken.connect(projectTerminal).didPay({
                 payer: beneficiary.address,
                 projectId: PROJECT_ID,
                 currentFundingCycleConfiguration: 0,
@@ -104,11 +105,13 @@ describe('MEOWs DAO Token Mint Tests: JBX Delegate', function () {
                 preferClaimedTokens: true,
                 memo: '',
                 metadata: '0x42'
-            })).to.emit(jbTierRewardToken, 'Transfer').withArgs(ethers.constants.AddressZero, beneficiary.address, 257 + i);
-    
+            });
+            const receipt = await tx.wait();
+            const tokenId = receipt.events?.filter((f: any) => f.event === 'Transfer')[0]['args']['tokenId'].toString();
+
             expect(await jbTierRewardToken.balanceOf(beneficiary.address)).to.equal(i + 1);
 
-            const tokenUri = await jbTierRewardToken.tokenURI(257 + i);
+            const tokenUri = await jbTierRewardToken.tokenURI(tokenId);
 
             let content = tokenUri;
             content = Buffer.from(content.slice(29), 'base64').toString('utf-8');
