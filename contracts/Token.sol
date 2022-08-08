@@ -212,8 +212,8 @@ contract GatewayToken is ERC721, AccessControl, ReentrancyGuard {
     unchecked {
       ++totalSupply;
     }
+    tokenId = totalSupply;
     _mint(msg.sender, totalSupply);
-    
   }
 
   //*********************************************************************//
