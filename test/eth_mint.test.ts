@@ -2,18 +2,18 @@ import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import fetch from 'node-fetch';
 
-import { deployMockContract } from '@ethereum-waffle/mock-contract';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { smock } from '@defi-wonderland/smock';
 
 import jbDirectory from '../node_modules/@jbx-protocol/contracts-v2/deployments/mainnet/jbDirectory.json';
 import jbETHPaymentTerminal from '../node_modules/@jbx-protocol/contracts-v2/deployments/mainnet/jbETHPaymentTerminal.json';
 
-async function deployMockContractFromAddress(contractAddress: string, etherscanKey: string, account: any) {
+async function deployMockContractFromAddress(contractAddress: string, etherscanKey: string) {
     const abi = await fetch(`https://api.etherscan.io/api?module=contract&action=getabi&address=${contractAddress}&apikey=${etherscanKey}`)
         .then(response => response.json())
         .then(data => JSON.parse(data['result']));
 
-    return deployMockContract(account, abi);
+    return smock.fake(abi, {address: contractAddress});
 }
 
 describe('MEOWs DAO Token Mint Tests: Ether', () => {
@@ -31,23 +31,25 @@ describe('MEOWs DAO Token Mint Tests: Ether', () => {
         const jbxProjectId = 99;
         const tokenMaxSupply = 8;
         const tokenMintAllowance = 6;
+        const mintPeriodStart = 0;
+        const mintPeriodEnd = 0;
 
         [deployer, ...accounts] = await ethers.getSigners();
 
-        const mockUniswapQuoter = await deployMockContractFromAddress('0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6', process.env.ETHERSCAN_KEY || '', deployer);
-        await mockUniswapQuoter.mock.quoteExactInputSingle.returns('1211000000000000000000');
+        const mockUniswapQuoter = await deployMockContractFromAddress('0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6', process.env.ETHERSCAN_KEY || '');
+        await mockUniswapQuoter.quoteExactInputSingle.returns('1211000000000000000000');
 
-        const mockUniswapRouter = await deployMockContractFromAddress('0xE592427A0AEce92De3Edee1F18E0157C05861564', process.env.ETHERSCAN_KEY || '', deployer);
+        const mockUniswapRouter = await deployMockContractFromAddress('0xE592427A0AEce92De3Edee1F18E0157C05861564', process.env.ETHERSCAN_KEY || '');
 
         const jbxJbTokensEth = '0x000000000000000000000000000000000000EEEe';
-        const ethTerminal = await deployMockContract(deployer, jbETHPaymentTerminal.abi);
-        await ethTerminal.mock.pay.returns(0);
+        const ethTerminal = await smock.fake(jbETHPaymentTerminal.abi);
+        await ethTerminal.pay.returns(0);
 
-        const mockDirectory = await deployMockContract(deployer, jbDirectory.abi);
-        await mockDirectory.mock.isTerminalOf.withArgs(jbxProjectId, ethTerminal.address).returns(true);
-        await mockDirectory.mock.primaryTerminalOf.withArgs(jbxProjectId, jbxJbTokensEth).returns(ethTerminal.address);
+        const mockDirectory = await smock.fake(jbDirectory.abi);
+        await mockDirectory.isTerminalOf.whenCalledWith(jbxProjectId, ethTerminal.address).returns(true);
+        await mockDirectory.primaryTerminalOf.whenCalledWith(jbxProjectId, jbxJbTokensEth).returns(ethTerminal.address);
 
-        const tokenFactory = await ethers.getContractFactory('Token', deployer);
+        const tokenFactory = await ethers.getContractFactory('GatewayToken', deployer);
         token = await tokenFactory.connect(deployer).deploy(
             tokenName,
             tokenSymbol,
@@ -58,8 +60,8 @@ describe('MEOWs DAO Token Mint Tests: Ether', () => {
             tokenMaxSupply,
             tokenUnitPrice,
             tokenMintAllowance,
-            mockUniswapQuoter.address,
-            mockUniswapRouter.address
+            mintPeriodStart,
+            mintPeriodEnd
         );
     });
 

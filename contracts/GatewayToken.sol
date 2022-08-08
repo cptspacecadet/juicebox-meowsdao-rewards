@@ -94,10 +94,9 @@ contract GatewayToken is ERC721, Ownable, ReentrancyGuard {
 
   address public constant WETH9 = address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
   address public constant DAI = address(0x6B175474E89094C44Da98b954EedeAC495271d0F);
-  // IQuoter public constant uniswapQuoter = IQuoter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6);
-  IQuoter public uniswapQuoter; // for testing
-  // ISwapRouter public constant uniswapRouter = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
-  ISwapRouter public uniswapRouter; // for testing
+  IQuoter public constant uniswapQuoter = IQuoter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6);
+  ISwapRouter public constant uniswapRouter = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
+
 
   IJBDirectory jbxDirectory;
   uint256 jbxProjectId;
