@@ -13,15 +13,13 @@ import '@rari-capital/solmate/src/tokens/ERC721.sol';
 import '@uniswap/v3-periphery/contracts/interfaces/IQuoter.sol';
 import '@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol';
 
-import 'hardhat/console.sol';
-
 interface IWETH9 is IERC20 {
   function deposit() external payable;
 
   function withdraw(uint256) external;
 }
 
-contract Token is ERC721, Ownable, ReentrancyGuard {
+contract GatewayToken is ERC721, Ownable, ReentrancyGuard {
   using Strings for uint256;
 
   /**
@@ -204,7 +202,7 @@ contract Token is ERC721, Ownable, ReentrancyGuard {
 
     @dev Proceeds are forwarded to the default jbx terminal for the project id set in the constructor. Payment will fail if the terminal is not set in the jbx directory.
    */
-  function mint() public payable nonReentrant onlyDuringMintPeriod returns (uint256 tokenId) {
+  function mint() external payable nonReentrant onlyDuringMintPeriod returns (uint256 tokenId) {
     if (totalSupply == maxSupply) {
       revert SUPPLY_EXHAUSTED();
     }
@@ -262,7 +260,7 @@ contract Token is ERC721, Ownable, ReentrancyGuard {
     @dev Pays into the appropriate jbx terminal for the token. The terminal may also issue tokens to the calling account.
      */
   function mint(IERC20 _token)
-    public
+    external
     payable
     nonReentrant
     onlyDuringMintPeriod
