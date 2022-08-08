@@ -64,12 +64,16 @@ contract AuctionMachine is Ownable, ReentrancyGuard {
     token = _token;
   }
 
+  //*********************************************************************//
+  // ---------------------- external transactions ---------------------- //
+  //*********************************************************************//
+
   function bid() external payable nonReentrant {
-    if (currentBidder == address(0) && currentBid == 0) {
+    if (currentBidder == address(0) && currentBid == 0 && currentTokenId == 0) {
       // no auction, create new
 
       startNewAuction();
-    } else if (currentBid >= msg.value) {
+    } else if (currentBid >= msg.value || msg.value < token.unitPrice()) {
       revert INVALID_BID();
     } else if (auctionExpiration > block.timestamp && currentBid < msg.value) {
       // new high bid
@@ -78,13 +82,13 @@ contract AuctionMachine is Ownable, ReentrancyGuard {
       currentBidder = msg.sender;
       currentBid = msg.value;
 
-      emit Bid(msg.sender, msg.value, address(this), currentTokenId);
+      emit Bid(msg.sender, msg.value, address(token), currentTokenId);
     } else {
       revert AUCTION_ENDED();
     }
   }
 
-  function settle() external nonReentrant {
+  function settle() external payable nonReentrant {
     if (auctionExpiration > block.timestamp) {
       revert AUCTION_ACTIVE();
     }
@@ -109,7 +113,7 @@ contract AuctionMachine is Ownable, ReentrancyGuard {
       }
       token.transferFrom(address(this), currentBidder, currentTokenId);
 
-      emit AuctionEnded(currentBidder, currentBid, address(this), currentTokenId);
+      emit AuctionEnded(currentBidder, currentBid, address(token), currentTokenId);
     } else {
       // auction concluded without bids
 
@@ -118,12 +122,30 @@ contract AuctionMachine is Ownable, ReentrancyGuard {
       }
     }
 
+      currentBidder = address(0);
+      currentBid = 0;
+      currentTokenId = 0;
+
     if (maxAuctions == 0 || completedAuctions + 1 <= maxAuctions) {
       startNewAuction();
     }
   }
 
-  // TODO: transfer owned NFTs
+  function timeLeft() public view returns (uint256) {
+    if (block.timestamp > auctionExpiration) {
+      return 0;
+    }
+
+    return auctionExpiration - block.timestamp;
+  }
+
+  //*********************************************************************//
+  // -------------------- priviledged transactions --------------------- //
+  //*********************************************************************//
+
+  function recoverToken(address _account, uint256 _tokenId) external nonReentrant onlyOwner {
+    token.transferFrom(address(this), _account, _tokenId);
+  }
 
   function startNewAuction() private {
     if (maxAuctions != 0 && completedAuctions == maxAuctions) {
@@ -135,6 +157,7 @@ contract AuctionMachine is Ownable, ReentrancyGuard {
     if (msg.value >= token.unitPrice()) {
       currentBidder = msg.sender;
       currentBid = msg.value;
+      emit Bid(msg.sender, msg.value, address(token), currentTokenId);
     } else {
       currentBidder = address(0);
       currentBid = 0;
