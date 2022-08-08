@@ -53,10 +53,6 @@ contract AuctionMachine is Ownable, ReentrancyGuard {
     IJBDirectory _jbxDirectory,
     Token _token
   ) {
-    if (_auctionDuration == 0) {
-      revert INVALID_DURATION();
-    }
-
     maxAuctions = _maxAuctions;
     auctionDuration = _auctionDuration;
     jbxProjectId = _projectId;
