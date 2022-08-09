@@ -193,4 +193,38 @@ describe('Deployer Workflow Tests', () => {
 
         expect(await auctionMachineContract.owner()).to.equal(accounts[1].address);
     });
+
+    it('Deploy a TraitsGatewayToken', async () => {
+        const name = 'Token';
+        const symbol = 'TKN';
+        const baseUri = '';
+        const contractUri = '';
+        const jbxProjectId = 99;
+        const maxSupply = 5;
+        const unitPrice = ethers.utils.parseEther('0.0125');
+        const mintAllowance = 5;
+        const ipfsGateway = 'https://.../';
+        const ipfsRoot = 'cid/';
+
+        let tx = await contractDeployer.connect(deployer).createTraitsGatewayToken(
+            name,
+            symbol,
+            baseUri,
+            contractUri,
+            jbxProjectId,
+            mockDirectory.address,
+            maxSupply,
+            unitPrice,
+            mintAllowance,
+            ipfsGateway,
+            ipfsRoot,
+            accounts[0].address
+        );
+        let result = await tx.wait();
+        const tokenAddress = result.events?.filter((f: any) => f.event === 'Deployment')[0]['args']['contractAddress'].toString();
+
+        const tokenContract = new ethers.Contract(tokenAddress, unorderedTokenArtifact.abi, ethers.provider);
+
+        expect(await tokenContract.hasRole('0x0000000000000000000000000000000000000000000000000000000000000000', accounts[0].address)).to.equal(true);
+    });
 });
