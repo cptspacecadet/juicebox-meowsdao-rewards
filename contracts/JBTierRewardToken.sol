@@ -374,7 +374,7 @@ contract JBTierRewardToken is
     @param _symbol The symbol that the token should be represented by.
     @param _contractUri A URI where contract metadata can be found. 
     @param _ipfsGateway HTTP IPFS gateway.
-    @param _ipfsRoot IPFS root for assets.
+    @param _ipfsRoot IPFS root CID for assets.
     @param _owner The address that should own this contract.
     @param _tierData The tiers according to which token distribution will be made. Must be passed in order of contribution floor, with implied increasing value.
     @param _shouldMintByDefault A flag indicating if contributions should mint NFTs if a tier's treshold is passed even if the tier ID isn't specified. 
@@ -484,6 +484,14 @@ contract JBTierRewardToken is
     reservedTokenBeneficiary = _beneficiary;
 
     emit SetReservedTokenBeneficiary(_beneficiary, msg.sender);
+  }
+
+  function setIPFSGatewayURI(string calldata _uri) external onlyOwner {
+    ipfsGateway = _uri;
+  }
+
+  function setIPFSRoot(string calldata _root) external onlyOwner {
+    ipfsRoot = _root;
   }
 
   //*********************************************************************//

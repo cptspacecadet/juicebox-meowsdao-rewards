@@ -54,7 +54,7 @@ const config: HardhatUserConfig = {
         disambiguatePaths: false,
         runOnCompile: true,
         strict: false,
-        only: ['AuctionMachine', ':Deployer$', 'Factory$', 'JBTierRewardToken', 'MeowGatewayUtil', ':Token$', 'UnorderedToken'],
+        only: ['AuctionMachine', ':Deployer$', 'Factory$', 'JBTierRewardToken', 'MeowCommonUtil', 'MeowGatewayUtil', ':Token$', 'UnorderedToken'],
     },
     gasReporter: {
         enabled: process.env.REPORT_GAS !== undefined,

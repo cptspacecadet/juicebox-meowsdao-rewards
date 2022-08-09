@@ -47,6 +47,8 @@ contract Token is ERC721, AccessControl, ReentrancyGuard {
   error MINT_NOT_STARTED();
   error MINT_CONCLUDED();
 
+  error INVALID_TOKEN();
+
   modifier onlyDuringMintPeriod() {
     if (mintPeriodStart != 0 && mintPeriodStart > block.timestamp) {
       revert MINT_NOT_STARTED();
@@ -150,6 +152,7 @@ contract Token is ERC721, AccessControl, ReentrancyGuard {
     @dev If the token has been set as "revealed", returned uri will append the token id
     */
   function tokenURI(uint256 _tokenId) virtual public view override returns (string memory uri) {
+    if (ownerOf(_tokenId) == address(0)) { revert INVALID_TOKEN(); }
     uri = !isRevealed ? baseUri : string(abi.encodePacked(baseUri, _tokenId.toString()));
   }
 

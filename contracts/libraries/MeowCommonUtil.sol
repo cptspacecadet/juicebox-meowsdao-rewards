@@ -29,51 +29,51 @@ library MeowCommonUtil {
   // Signature 1,82,1
   // Juicebox 1,83,1
 
-  function specialNakedOffsets() private pure returns (uint8[12] memory) {
+  function specialNakedOffsets() internal pure returns (uint8[12] memory) {
     return [0, 8, 14, 18, 22, 28, 34, 38, 70, 76, 82, 83];
   }
 
-  function specialNakedCardinality() private pure returns (uint8[12] memory) {
+  function specialNakedCardinality() internal pure returns (uint8[12] memory) {
     return [86, 25, 2, 3, 32, 18, 14, 2, 19, 35, 1, 1];
   }
 
-  function specialNakedMask() private pure returns (uint8[12] memory) {
+  function specialNakedMask() internal pure returns (uint8[12] memory) {
     return [127, 63, 15, 15, 63, 31, 15, 31, 31, 63, 1, 1];
   }
 
-  function nakedOffsets() private pure returns (uint8[12] memory) {
+  function nakedOffsets() internal pure returns (uint8[12] memory) {
     return [0, 8, 14, 18, 22, 28, 34, 38, 64, 76, 82, 83];
   }
 
-  function nakedCardinality() private pure returns (uint8[12] memory) {
+  function nakedCardinality() internal pure returns (uint8[12] memory) {
     return [86, 25, 2, 3, 32, 18, 14, 2, 29, 35, 1, 1];
   }
 
-  function nakedMask() private pure returns (uint8[12] memory) {
+  function nakedMask() internal pure returns (uint8[12] memory) {
     return [127, 63, 15, 15, 63, 31, 15, 31, 31, 63, 1, 1];
   }
 
-  function tShirtOffsets() private pure returns (uint8[12] memory) {
+  function tShirtOffsets() internal pure returns (uint8[12] memory) {
     return [0, 8, 14, 18, 22, 28, 54, 58, 64, 76, 82, 83];
   }
 
-  function tShirtCardinality() private pure returns (uint8[12] memory) {
+  function tShirtCardinality() internal pure returns (uint8[12] memory) {
     return [86, 25, 2, 3, 32, 18, 12, 33, 29, 35, 1, 1];
   }
 
-  function tShirtMask() private pure returns (uint8[12] memory) {
+  function tShirtMask() internal pure returns (uint8[12] memory) {
     return [127, 63, 15, 15, 63, 31, 15, 31, 31, 63, 1, 1];
   }
 
-  function shirtOffsets() private pure returns (uint8[13] memory) {
+  function shirtOffsets() internal pure returns (uint8[13] memory) {
     return [0, 8, 14, 18, 22, 28, 42, 46, 50, 64, 76, 82, 83];
   }
 
-  function shirtCardinality() private pure returns (uint8[13] memory) {
+  function shirtCardinality() internal pure returns (uint8[13] memory) {
     return [86, 25, 2, 3, 32, 18, 10, 10, 6, 29, 35, 1, 1];
   }
 
-  function shirtMask() private pure returns (uint8[13] memory) {
+  function shirtMask() internal pure returns (uint8[13] memory) {
     return [127, 63, 15, 15, 63, 31, 15, 15, 15, 31, 63, 1, 1];
   }
 
@@ -244,7 +244,7 @@ library MeowCommonUtil {
   }
 
   function nameForTraits(uint8 _offset, uint8 _index)
-    private
+    internal
     view
     returns (string memory group, string memory trait)
   {
