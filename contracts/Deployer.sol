@@ -4,6 +4,7 @@ pragma solidity ^0.8.6;
 import '@jbx-protocol/contracts-v2/contracts/interfaces/IJBDirectory.sol';
 
 import './libraries/factory/AuctionMachineFactory.sol';
+import './libraries/factory/TraitsGatewayTokenFactory.sol';
 import './libraries/factory/TokenFactory.sol';
 import './libraries/factory/UnorderedTokenFactory.sol';
 
@@ -32,6 +33,40 @@ contract Deployer {
     emit Deployment('AuctionMachine', am, _owner);
 
     return am;
+  }
+
+function createTraitsGatewayToken(
+    string memory _name,
+    string memory _symbol,
+    string memory _baseUri,
+    string memory _contractUri,
+    uint256 _jbxProjectId,
+    IJBDirectory _jbxDirectory,
+    uint256 _maxSupply,
+    uint256 _unitPrice,
+    uint256 _mintAllowance,
+    string memory _ipfsGateway,
+    string memory _ipfsRoot,
+    address _owner
+  ) public returns (address) {
+    address t = TraitsGatewayTokenFactory.createTraitsGatewayToken(
+      _name,
+      _symbol,
+      _baseUri,
+      _contractUri,
+      _jbxProjectId,
+      _jbxDirectory,
+      _maxSupply,
+      _unitPrice,
+      _mintAllowance,
+      _ipfsGateway,
+      _ipfsRoot,
+      _owner
+    );
+
+    emit Deployment('Token', t, _owner);
+
+    return t;
   }
 
   function createToken(
@@ -101,4 +136,8 @@ contract Deployer {
 
     return t;
   }
+
+
+
+  
 }

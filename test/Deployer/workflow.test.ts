@@ -35,6 +35,21 @@ describe('Deployer Workflow Tests', () => {
         const auctionMachineFactoryFactory = await ethers.getContractFactory('AuctionMachineFactory', deployer);
         const auctionMachineFactory = await auctionMachineFactoryFactory.connect(deployer).deploy();
 
+        const meowCommonUtilFactory = await ethers.getContractFactory('MeowCommonUtil', deployer);
+        const meowCommonUtilLibrary = await meowCommonUtilFactory.connect(deployer).deploy();
+
+        const meowGatewayUtilFactory = await ethers.getContractFactory('MeowGatewayUtil', {
+            libraries: { MeowCommonUtil: meowCommonUtilLibrary.address },
+            signer: deployer
+        });
+        const meowGatewayUtilLibrary = await meowGatewayUtilFactory.connect(deployer).deploy();
+
+        const traitsGatewayTokenFactoryFactory = await ethers.getContractFactory('TraitsGatewayTokenFactory', {
+            libraries: { MeowGatewayUtil: meowGatewayUtilLibrary.address },
+            signer: deployer
+        });
+        const traitsGatewayTokenFactory = await traitsGatewayTokenFactoryFactory.connect(deployer).deploy();
+
         const tokenFactoryFactory = await ethers.getContractFactory('TokenFactory', deployer);
         const tokenFactory = await tokenFactoryFactory.connect(deployer).deploy();
 
@@ -44,6 +59,7 @@ describe('Deployer Workflow Tests', () => {
         const deployerFactory = await ethers.getContractFactory('Deployer', {
             libraries: {
                 AuctionMachineFactory: auctionMachineFactory.address,
+                TraitsGatewayTokenFactory: traitsGatewayTokenFactory.address,
                 TokenFactory: tokenFactory.address,
                 UnorderedTokenFactory: unorderedTokenFactory.address
             },
