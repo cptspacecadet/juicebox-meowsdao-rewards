@@ -102,32 +102,37 @@ describe('MEOWs DAO Token Mint Tests: JBX Delegate', function () {
         for (let i = 0; i != 6; i++) {
             const contribution = baseContribution.add(ethers.utils.parseEther(`${i}`));
 
-            const tx = await jbTierRewardToken.connect(projectTerminal).didPay({
-                payer: beneficiary.address,
-                projectId: PROJECT_ID,
-                currentFundingCycleConfiguration: 0,
-                amount: { token: ethToken, value: contribution, decimals: 18, currency: CURRENCY_ETH },
-                projectTokenCount: 0,
-                beneficiary: beneficiary.address,
-                preferClaimedTokens: true,
-                memo: '',
-                metadata: '0x42'
-            });
-            const receipt = await tx.wait();
-            const tokenId = receipt.events?.filter((f: any) => f.event === 'Transfer')[0]['args']['tokenId'].toString();
+            try {
+                const tx = await jbTierRewardToken.connect(projectTerminal).didPay({
+                    payer: beneficiary.address,
+                    projectId: PROJECT_ID,
+                    currentFundingCycleConfiguration: 0,
+                    amount: { token: ethToken, value: contribution, decimals: 18, currency: CURRENCY_ETH },
+                    projectTokenCount: 0,
+                    beneficiary: beneficiary.address,
+                    preferClaimedTokens: true,
+                    memo: '',
+                    metadata: '0x42'
+                });
+                const receipt = await tx.wait();
+                const tokenId = receipt.events?.filter((f: any) => f.event === 'Transfer')[0]['args']['tokenId'].toString();
 
-            expect(await jbTierRewardToken.balanceOf(beneficiary.address)).to.equal(i + 1);
+                expect(await jbTierRewardToken.balanceOf(beneficiary.address)).to.equal(i + 1);
 
-            const tokenUri = await jbTierRewardToken.tokenURI(tokenId);
+                const traits = await jbTierRewardToken.tokenTraits(tokenId);
+                expect(await meowGatewayUtilLibrary.validateTraits(traits)).to.equal(true);
 
-            let content = tokenUri;
-            content = Buffer.from(content.slice(29), 'base64').toString('utf-8');
-            // content = JSON.parse(content)['image'];
-            // content = Buffer.from(content.slice(26), 'base64').toString('utf-8');
-            fs.writeFileSync(`tier-${i + 1}-token.txt`, content);
+                const tokenUri = await jbTierRewardToken.tokenURI(tokenId);
 
-            const traits = await jbTierRewardToken.tokenTraits(tokenId);
-            await meowGatewayUtilLibrary.validateTraits(traits);
+                let content = tokenUri;
+                content = Buffer.from(content.slice(29), 'base64').toString('utf-8');
+                // content = JSON.parse(content)['image'];
+                // content = Buffer.from(content.slice(26), 'base64').toString('utf-8');
+                fs.writeFileSync(`tier-${i + 1}-token.txt`, content);
+            } catch (err) {
+                console.log(`Mint failed at ${i}`);
+                console.log(err);
+            }
         }
     });
 });

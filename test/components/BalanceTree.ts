@@ -1,4 +1,3 @@
-// eslint-disable-next-line node/no-missing-import
 import MerkleTree from './MerkleTree';
 import { BigNumber, utils } from 'ethers';
 
@@ -29,12 +28,12 @@ export default class BalanceTree {
     return pair.equals(root);
   }
 
-  // keccak256(abi.encode(index, account, data))
   public static toNode(
     index: number | BigNumber,
     account: string,
     data: number | BigNumber,
   ): Buffer {
+    // keccak256(abi.encode(index, account, data))
     return Buffer.from(
       utils.solidityKeccak256(['uint256', 'address', 'uint256'], [index, account, data]).slice(2),
       'hex',

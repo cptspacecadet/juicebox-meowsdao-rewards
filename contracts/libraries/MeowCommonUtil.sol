@@ -139,7 +139,7 @@ library MeowCommonUtil {
             | 4352
             | 86; // TODO: free mint
     } else if (population == 2) {
-      traits = uint256(uint8(_seed) % shirtCardinality()[0]);
+      traits = uint256(uint8(_seed) % shirtCardinality()[0] + 1);
       for (uint8 i = 1; i != 13; ) {
         traits |=
           uint256((uint8(_seed >> shirtOffsets()[i]) % shirtCardinality()[i]) + 1) <<
@@ -147,7 +147,7 @@ library MeowCommonUtil {
         ++i;
       }
     } else if (population == 3) {
-      traits = uint256(uint8(_seed) % tShirtCardinality()[0]);
+      traits = uint256(uint8(_seed) % tShirtCardinality()[0] + 1);
       for (uint8 i = 1; i != 12; ) {
         traits |=
           uint256((uint8(_seed >> tShirtOffsets()[i]) % tShirtCardinality()[i]) + 1) <<
@@ -155,7 +155,7 @@ library MeowCommonUtil {
         ++i;
       }
     } else if (population == 4) {
-      traits = uint256(uint8(_seed) % nakedCardinality()[0]);
+      traits = uint256(uint8(_seed) % nakedCardinality()[0] + 1);
       for (uint8 i = 1; i != 12; ) {
         traits |=
           uint256((uint8(_seed >> nakedOffsets()[i]) % nakedCardinality()[i]) + 1) <<
@@ -163,7 +163,7 @@ library MeowCommonUtil {
         ++i;
       }
     } else if (population == 5) {
-      traits = uint256(uint8(_seed) % specialNakedCardinality()[0]);
+      traits = uint256(uint8(_seed) % specialNakedCardinality()[0] + 1);
       for (uint8 i = 1; i != 12; ) {
         traits |=
           uint256((uint8(_seed >> specialNakedOffsets()[i]) % specialNakedCardinality()[i]) + 1) <<

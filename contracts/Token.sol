@@ -170,12 +170,24 @@ contract Token is ERC721, AccessControl, ReentrancyGuard {
       revert SUPPLY_EXHAUSTED();
     }
 
+    processPayment();
+
+    unchecked {
+      ++totalSupply;
+    }
+    tokenId = totalSupply;
+    _mint(msg.sender, totalSupply);
+  }
+
+  /**
+    * @notice Accepts Ether payment and forwards it to the appropriate jbx terminal.
+    */
+  function processPayment() internal virtual {
     uint256 accountBalance = balanceOf(msg.sender);
     if (accountBalance == mintAllowance) {
       revert ALLOWANCE_EXHAUSTED();
     }
 
-    // TODO: consider beaking this out
     uint256 expectedPrice;
     if (accountBalance != 0 && accountBalance != 2 && accountBalance != 4) {
       expectedPrice = accountBalance * unitPrice;
@@ -211,12 +223,6 @@ contract Token is ERC721, AccessControl, ReentrancyGuard {
         abi.encodePacked('MEOWsDAO Progeny Noun Token Minted at ', block.timestamp.toString(), '.')
       );
     }
-
-    unchecked {
-      ++totalSupply;
-    }
-    tokenId = totalSupply;
-    _mint(msg.sender, totalSupply);
   }
 
   //*********************************************************************//
@@ -229,7 +235,6 @@ contract Token is ERC721, AccessControl, ReentrancyGuard {
     }
     tokenId = totalSupply;
     _mint(_account, tokenId);
-    
   }
 
   function setPause(bool pause) external onlyRole(DEFAULT_ADMIN_ROLE) {

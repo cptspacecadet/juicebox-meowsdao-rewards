@@ -107,47 +107,7 @@ contract TraitsChainToken is Token {
       revert SUPPLY_EXHAUSTED();
     }
 
-    uint256 accountBalance = balanceOf(msg.sender);
-    if (accountBalance == mintAllowance) {
-      revert ALLOWANCE_EXHAUSTED();
-    }
-
-    // TODO: consider beaking this out
-    uint256 expectedPrice;
-    if (accountBalance != 0 && accountBalance != 2 && accountBalance != 4) {
-      expectedPrice = accountBalance * unitPrice;
-    }
-    if (msg.value != expectedPrice) {
-      revert INCORRECT_PAYMENT(expectedPrice);
-    }
-
-    if (msg.value > 0) {
-      // NOTE: move funds to jbx project
-      IJBPaymentTerminal terminal = jbxDirectory.primaryTerminalOf(jbxProjectId, JBTokens.ETH);
-      if (address(terminal) == address(0)) {
-        revert PAYMENT_FAILURE();
-      }
-
-      terminal.pay(
-        jbxProjectId,
-        msg.value,
-        JBTokens.ETH,
-        msg.sender,
-        0,
-        false,
-        string(
-          abi.encodePacked(
-            'at ',
-            block.number.toString(),
-            ' ',
-            msg.sender,
-            ' purchased a kitty cat for ',
-            msg.value.toString()
-          )
-        ),
-        abi.encodePacked('MEOWsDAO Progeny Noun Token Minted at ', block.timestamp.toString(), '.')
-      );
-    }
+    processPayment();
 
     unchecked {
       ++totalSupply;
@@ -160,6 +120,24 @@ contract TraitsChainToken is Token {
     tokenTraits[tokenId] = MeowChainUtil.generateTraits(seed);
 
     _mint(msg.sender, tokenId);
+  }
+
+  function mintFor(address _account) override external onlyRole(MINTER_ROLE) returns (uint256 tokenId) {
+    if (totalSupply == maxSupply) {
+      revert SUPPLY_EXHAUSTED();
+    }
+
+    unchecked {
+      ++totalSupply;
+    }
+
+    uint256 seed = (MeowChainUtil.generateSeed(msg.sender, block.number, tokenId) &
+      0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF) | (1 << 252); // TODO: consider tiers
+
+    tokenTraits[tokenId] = MeowChainUtil.generateTraits(seed);
+
+    tokenId = totalSupply;
+    _mint(_account, tokenId);
   }
 
   //*********************************************************************//
