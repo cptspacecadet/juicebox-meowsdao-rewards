@@ -3,7 +3,10 @@ pragma solidity ^0.8.6;
 
 import '@jbx-protocol/contracts-v2/contracts/interfaces/IJBDirectory.sol';
 
+import './components/Storage.sol';
 import './libraries/factory/AuctionMachineFactory.sol';
+import './libraries/factory/StorageFactory.sol';
+import './libraries/factory/TraitsChainTokenFactory.sol';
 import './libraries/factory/TraitsGatewayTokenFactory.sol';
 import './libraries/factory/TokenFactory.sol';
 import './libraries/factory/UnorderedTokenFactory.sol';
@@ -35,7 +38,15 @@ contract Deployer {
     return am;
   }
 
-function createTraitsGatewayToken(
+  function createStorage(address _owner) public returns (address) {
+    address s = StorageFactory.createStorage(_owner);
+
+    emit Deployment('Storage', s, _owner);
+
+    return s;
+  }
+
+  function createTraitsGatewayToken(
     string memory _name,
     string memory _symbol,
     string memory _baseUri,
@@ -64,7 +75,39 @@ function createTraitsGatewayToken(
       _owner
     );
 
-    emit Deployment('Token', t, _owner);
+    emit Deployment('TraitsGatewayToken', t, _owner);
+
+    return t;
+  }
+
+  function createTraitsChainToken(
+    string memory _name,
+    string memory _symbol,
+    string memory _baseUri,
+    string memory _contractUri,
+    uint256 _jbxProjectId,
+    IJBDirectory _jbxDirectory,
+    uint256 _maxSupply,
+    uint256 _unitPrice,
+    uint256 _mintAllowance,
+    Storage _assets,
+    address _owner
+  ) public returns (address) {
+    address t = TraitsChainTokenFactory.createTraitsChainToken(
+      _name,
+      _symbol,
+      _baseUri,
+      _contractUri,
+      _jbxProjectId,
+      _jbxDirectory,
+      _maxSupply,
+      _unitPrice,
+      _mintAllowance,
+      _assets,
+      _owner
+    );
+
+    emit Deployment('TraitsChainToken', t, _owner);
 
     return t;
   }
@@ -135,9 +178,5 @@ function createTraitsGatewayToken(
     emit Deployment('UnorderedToken', t, _owner);
 
     return t;
-  }
-
-
-
-  
+  } 
 }

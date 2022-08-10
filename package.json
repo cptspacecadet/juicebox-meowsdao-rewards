@@ -15,7 +15,6 @@
     "@types/uuid4": "2.0.0",
     "@typescript-eslint/eslint-plugin": "^4.33.0",
     "@typescript-eslint/parser": "^4.33.0",
-    "@uniswap/v3-periphery": "^1.4.1",
     "chai": "^4.3.6",
     "dotenv": "^16.0.1",
     "eslint": "^7.32.0",
@@ -44,8 +43,11 @@
     "uuid4": "^2.0.2"
   },
   "dependencies": {
+    "@0xsequence/sstore2": "github:0xsequence/sstore2",
     "@jbx-protocol/contracts-v2": "^8.0.2",
     "@openzeppelin/contracts": "^4.7.0",
-    "@rari-capital/solmate": "6.4.0"
+    "@openzeppelin/contracts-upgradeable": "^4.7.2",
+    "@rari-capital/solmate": "6.4.0",
+    "@uniswap/v3-periphery": "^1.4.1"
   }
 }

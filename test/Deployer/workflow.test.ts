@@ -38,11 +38,26 @@ describe('Deployer Workflow Tests', () => {
         const meowCommonUtilFactory = await ethers.getContractFactory('MeowCommonUtil', deployer);
         const meowCommonUtilLibrary = await meowCommonUtilFactory.connect(deployer).deploy();
 
+        const meowChainUtilFactory = await ethers.getContractFactory('MeowChainUtil', {
+            libraries: { MeowCommonUtil: meowCommonUtilLibrary.address },
+            signer: deployer
+        });
+        const meowChainUtilLibrary = await meowChainUtilFactory.connect(deployer).deploy();
+
         const meowGatewayUtilFactory = await ethers.getContractFactory('MeowGatewayUtil', {
             libraries: { MeowCommonUtil: meowCommonUtilLibrary.address },
             signer: deployer
         });
         const meowGatewayUtilLibrary = await meowGatewayUtilFactory.connect(deployer).deploy();
+
+        const storageFactoryFactory = await ethers.getContractFactory('StorageFactory', deployer);
+        const storageFactory = await storageFactoryFactory.connect(deployer).deploy();
+
+        const traitsChainTokenFactoryFactory = await ethers.getContractFactory('TraitsChainTokenFactory', {
+            libraries: { MeowChainUtil: meowChainUtilLibrary.address },
+            signer: deployer
+        });
+        const traitsChainTokenFactory = await traitsChainTokenFactoryFactory.connect(deployer).deploy();
 
         const traitsGatewayTokenFactoryFactory = await ethers.getContractFactory('TraitsGatewayTokenFactory', {
             libraries: { MeowGatewayUtil: meowGatewayUtilLibrary.address },
@@ -59,6 +74,8 @@ describe('Deployer Workflow Tests', () => {
         const deployerFactory = await ethers.getContractFactory('Deployer', {
             libraries: {
                 AuctionMachineFactory: auctionMachineFactory.address,
+                StorageFactory: storageFactory.address,
+                TraitsChainTokenFactory: traitsChainTokenFactory.address,
                 TraitsGatewayTokenFactory: traitsGatewayTokenFactory.address,
                 TokenFactory: tokenFactory.address,
                 UnorderedTokenFactory: unorderedTokenFactory.address
@@ -221,6 +238,47 @@ describe('Deployer Workflow Tests', () => {
             accounts[0].address
         );
         let result = await tx.wait();
+        const tokenAddress = result.events?.filter((f: any) => f.event === 'Deployment')[0]['args']['contractAddress'].toString();
+
+        const tokenContract = new ethers.Contract(tokenAddress, unorderedTokenArtifact.abi, ethers.provider);
+
+        expect(await tokenContract.hasRole('0x0000000000000000000000000000000000000000000000000000000000000000', accounts[0].address)).to.equal(true);
+    });
+
+    it('Deploy a Storage', async () => {
+        let tx = await contractDeployer.connect(deployer).createStorage(accounts[0].address);
+        let result = await tx.wait();
+        const storageAddress = result.events?.filter((f: any) => f.event === 'Deployment')[0]['args']['contractAddress'].toString();
+    });
+
+    it('Deploy a TraitsChainToken', async () => {
+        let tx = await contractDeployer.connect(deployer).createStorage(accounts[0].address);
+        let result = await tx.wait();
+        const storageAddress = result.events?.filter((f: any) => f.event === 'Deployment')[0]['args']['contractAddress'].toString();
+
+        const name = 'Token';
+        const symbol = 'TKN';
+        const baseUri = '';
+        const contractUri = '';
+        const jbxProjectId = 99;
+        const maxSupply = 5;
+        const unitPrice = ethers.utils.parseEther('0.0125');
+        const mintAllowance = 5;
+
+        tx = await contractDeployer.connect(deployer).createTraitsChainToken(
+            name,
+            symbol,
+            baseUri,
+            contractUri,
+            jbxProjectId,
+            mockDirectory.address,
+            maxSupply,
+            unitPrice,
+            mintAllowance,
+            storageAddress,
+            accounts[0].address
+        );
+        result = await tx.wait();
         const tokenAddress = result.events?.filter((f: any) => f.event === 'Deployment')[0]['args']['contractAddress'].toString();
 
         const tokenContract = new ethers.Contract(tokenAddress, unorderedTokenArtifact.abi, ethers.provider);
