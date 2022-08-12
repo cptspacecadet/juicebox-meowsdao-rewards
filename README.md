@@ -1,4 +1,4 @@
-# possiblecats
+# Juicebox MeowDAO Rewards
 
 ## Contracts
 
@@ -14,7 +14,7 @@ A "regular" ERC721 NFT which allows minting of a limited set of NFTs with ipfs-b
 
 ### UnorderedToken
 
-An ERC721 NFT which allows minting of a limited set of NFTs with ipfs-bound assets and metadata. Proceeds from the initial sale got to a Juicebox project. This contract optionally supports payment in ERC20 tokens rather than Ether for which there is a Uniswap pool. Other features include Merkle-tree mints, mint period and non-sequential token ids.
+An ERC721 NFT which allows minting of a limited set of NFTs with ipfs-bound assets and metadata. Proceeds from the initial sale go to a Juicebox project. This contract optionally supports payment in ERC20 tokens rather than Ether for which there is a Uniswap pool. Other features include Merkle-tree mints, mint period and non-sequential token ids.
 
 ## Commands
 
