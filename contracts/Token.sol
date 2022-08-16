@@ -5,7 +5,9 @@ import '@jbx-protocol/contracts-v2/contracts/interfaces/IJBDirectory.sol';
 import '@jbx-protocol/contracts-v2/contracts/interfaces/IJBPaymentTerminal.sol';
 import '@jbx-protocol/contracts-v2/contracts/libraries/JBTokens.sol';
 import '@openzeppelin/contracts/access/AccessControl.sol';
+import '@openzeppelin/contracts/interfaces/IERC2981.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/utils/Strings.sol';
 import '@rari-capital/solmate/src/tokens/ERC721.sol';
 
@@ -49,6 +51,8 @@ contract Token is ERC721, AccessControl, ReentrancyGuard {
 
   error INVALID_TOKEN();
 
+  error INVALID_RATE();
+
   modifier onlyDuringMintPeriod() {
     if (mintPeriodStart != 0 && mintPeriodStart > block.timestamp) {
       revert MINT_NOT_STARTED();
@@ -80,16 +84,23 @@ contract Token is ERC721, AccessControl, ReentrancyGuard {
   uint256 public totalSupply;
 
   /**
-    @notice Revealed flag.
-
-    @dev changes the way tokenUri(uint256) works.
+   * @notice Revealed flag.
+   *
+   * @dev changes the way tokenUri(uint256) works.
    */
   bool public isRevealed;
 
   /**
-    @notice Pause minting flag
+   * @notice Pause minting flag
    */
   bool public isPaused;
+
+  address payable public royaltyReceiver;
+
+  /**
+   * @notice Royalty rate expressed in bps.
+   */
+  uint16 public royaltyRate;
 
   //*********************************************************************//
   // -------------------------- constructor ---------------------------- //
@@ -151,9 +162,27 @@ contract Token is ERC721, AccessControl, ReentrancyGuard {
   /**
     @dev If the token has been set as "revealed", returned uri will append the token id
     */
-  function tokenURI(uint256 _tokenId) virtual public view override returns (string memory uri) {
-    if (ownerOf(_tokenId) == address(0)) { revert INVALID_TOKEN(); }
+  function tokenURI(uint256 _tokenId) public view virtual override returns (string memory uri) {
+    if (ownerOf(_tokenId) == address(0)) {
+      revert INVALID_TOKEN();
+    }
     uri = !isRevealed ? baseUri : string(abi.encodePacked(baseUri, _tokenId.toString()));
+  }
+
+  /**
+   * @notice EIP2981 implementation for royalty distribution.
+   *
+   * @param _tokenId Token id.
+   * @param _salePrice NFT sale price to derive royalty amount from.
+   */
+  function royaltyInfo(uint256 _tokenId, uint256 _salePrice) external view virtual returns (address receiver, uint256 royaltyAmount) {
+    if (_salePrice == 0 || _ownerOf[_tokenId] == address(0)) {
+      receiver = address(0);
+      royaltyAmount = 0;
+    } else {
+      receiver = royaltyReceiver == address(0) ? address(this) : royaltyReceiver;
+      royaltyAmount = (_salePrice * royaltyRate) / 10_000;
+    }
   }
 
   //*********************************************************************//
@@ -165,7 +194,7 @@ contract Token is ERC721, AccessControl, ReentrancyGuard {
 
     @dev Proceeds are forwarded to the default jbx terminal for the project id set in the constructor. Payment will fail if the terminal is not set in the jbx directory.
    */
-  function mint() virtual external payable nonReentrant onlyDuringMintPeriod returns (uint256 tokenId) {
+  function mint() external payable virtual nonReentrant onlyDuringMintPeriod returns (uint256 tokenId) {
     if (totalSupply == maxSupply) {
       revert SUPPLY_EXHAUSTED();
     }
@@ -180,8 +209,8 @@ contract Token is ERC721, AccessControl, ReentrancyGuard {
   }
 
   /**
-    * @notice Accepts Ether payment and forwards it to the appropriate jbx terminal.
-    */
+   * @notice Accepts Ether payment and forwards it to the appropriate jbx terminal.
+   */
   function processPayment() internal virtual {
     uint256 accountBalance = balanceOf(msg.sender);
     if (accountBalance == mintAllowance) {
@@ -210,16 +239,7 @@ contract Token is ERC721, AccessControl, ReentrancyGuard {
         msg.sender,
         0,
         false,
-        string(
-          abi.encodePacked(
-            'at ',
-            block.number.toString(),
-            ' ',
-            msg.sender,
-            ' purchased a kitty cat for ',
-            msg.value.toString()
-          )
-        ),
+        string(abi.encodePacked('at ', block.number.toString(), ' ', msg.sender, ' purchased a kitty cat for ', msg.value.toString())),
         abi.encodePacked('MEOWsDAO Progeny Noun Token Minted at ', block.timestamp.toString(), '.')
       );
     }
@@ -229,7 +249,7 @@ contract Token is ERC721, AccessControl, ReentrancyGuard {
   // -------------------- priviledged transactions --------------------- //
   //*********************************************************************//
 
-  function mintFor(address _account) virtual external onlyRole(MINTER_ROLE) returns (uint256 tokenId) {
+  function mintFor(address _account) external virtual onlyRole(MINTER_ROLE) returns (uint256 tokenId) {
     unchecked {
       ++totalSupply;
     }
@@ -284,10 +304,10 @@ contract Token is ERC721, AccessControl, ReentrancyGuard {
   }
 
   /**
-    @notice Set NFT metadata base URI.
-
-    @dev URI must include the trailing slash.
-    */
+   * @notice Set NFT metadata base URI.
+   *
+   * @dev URI must include the trailing slash.
+   */
   function setBaseURI(string memory _baseUri, bool _reveal) external onlyRole(DEFAULT_ADMIN_ROLE) {
     if (isRevealed && !_reveal) {
       revert ALREADY_REVEALED();
@@ -297,8 +317,41 @@ contract Token is ERC721, AccessControl, ReentrancyGuard {
     isRevealed = _reveal;
   }
 
+  /**
+   * @notice Allows owner to transfer ERC20 balances.
+   */
+  function transferTokenBalance(
+    IERC20 token,
+    address to,
+    uint256 amount
+  ) external override onlyOwner {
+    token.transfer(to, amount);
+  }
+
+  /**
+   * @notice Sets royalty info
+   * @param _royaltyReceiver Payable royalties receiver, if set to address(0) royalties will be processed by the contract itself.
+   * @param _royaltyRate Rate expressed in bps, can only be set once.
+   */
+  function setRoyalties(address _royaltyReceiver, uint16 _royaltyRate) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    royaltyReceiver = payable(_royaltyReceiver);
+
+    if (_royaltyRate > 10_000) {
+      revert INVALID_RATE();
+    }
+
+    if (royaltyRate == 0) {
+      royaltyRate = _royaltyRate;
+    }
+  }
+
+  /**
+   * @dev See {IERC165-supportsInterface}.
+   */
   function supportsInterface(bytes4 interfaceId) public view override(AccessControl, ERC721) returns (bool) {
-    return AccessControl.supportsInterface(interfaceId)
-        || ERC721.supportsInterface(interfaceId);
+    return
+      interfaceId == type(IERC2981).interfaceId || // 0x2a55205a
+      AccessControl.supportsInterface(interfaceId) ||
+      ERC721.supportsInterface(interfaceId);
   }
 }
