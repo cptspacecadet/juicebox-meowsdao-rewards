@@ -192,7 +192,7 @@ contract Token is ERC721, AccessControl, ReentrancyGuard {
   /**
     @notice Mints a token to the calling account. Must be paid in Ether if price is non-zero.
 
-    @dev Proceeds are forwarded to the default jbx terminal for the project id set in the constructor. Payment will fail if the terminal is not set in the jbx directory.
+    @dev Proceeds are forwarded to the default Juicebox terminal for the project id set in the constructor. Payment will fail if the terminal is not set in the jbx directory.
    */
   function mint() external payable virtual nonReentrant onlyDuringMintPeriod returns (uint256 tokenId) {
     if (totalSupply == maxSupply) {
@@ -207,6 +207,8 @@ contract Token is ERC721, AccessControl, ReentrancyGuard {
     tokenId = totalSupply;
     _mint(msg.sender, totalSupply);
   }
+
+    // mint with memo
 
   /**
    * @notice Accepts Ether payment and forwards it to the appropriate jbx terminal.
@@ -232,7 +234,7 @@ contract Token is ERC721, AccessControl, ReentrancyGuard {
         revert PAYMENT_FAILURE();
       }
 
-      terminal.pay(
+      terminal.pay{value: msg.value}(
         jbxProjectId,
         msg.value,
         JBTokens.ETH,
@@ -324,7 +326,7 @@ contract Token is ERC721, AccessControl, ReentrancyGuard {
     IERC20 token,
     address to,
     uint256 amount
-  ) external override onlyOwner {
+  ) external onlyRole(DEFAULT_ADMIN_ROLE) {
     token.transfer(to, amount);
   }
 
