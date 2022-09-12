@@ -134,7 +134,7 @@ describe('AuctionMachine TraitsGatewayToken Tests', () => {
   });
 
   it('Settle auction without bids', async () => {
-    let remaining = await auctionMachine.timeLeft();
+    const remaining = await auctionMachine.timeLeft();
     await ethers.provider.send('evm_increaseTime', [Number(remaining.toString()) + 10]);
     await ethers.provider.send('evm_mine', []);
 

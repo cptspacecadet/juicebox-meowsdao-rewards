@@ -1,8 +1,9 @@
 {
-  "name": "meowtoken",
+  "name": "token",
   "scripts": {
     "compile": "npx hardhat compile",
-    "test": "npx hardhat test"
+    "test": "npx hardhat test",
+    "format": "prettier --write ."
   },
   "devDependencies": {
     "@defi-wonderland/smock": "^2.2.0",
