@@ -45,16 +45,20 @@ const config: HardhatUserConfig = {
             blockGasLimit: 1_000_000_000
         },
         rinkeby: {
-            url: `${process.env.RINKEBY_URL}/${process.env.ALCHEMY_RINKEBY_KEY}`,
+            url: `${process.env.ALCHEMY_RINKEBY_URL}/${process.env.ALCHEMY_RINKEBY_KEY}`,
             accounts: [`${process.env.PRIVATE_KEY}`]
         },
+        goerli: {
+            url: `${process.env.ALCHEMY_GOERLI_URL}/${process.env.ALCHEMY_GOERLI_KEY}`,
+            accounts: [`${process.env.PRIVATE_KEY}`]
+        }
     },
     contractSizer: {
         alphaSort: true,
         disambiguatePaths: false,
         runOnCompile: true,
         strict: false,
-        only: ['AuctionMachine', ':Deployer$', 'Factory$', 'JBTierRewardToken', 'MeowChainUtil', 'MeowCommonUtil', 'MeowGatewayUtil', 'TraitsChainToken', 'TraitsGatewayToken', ':Token$', 'UnorderedToken'],
+        only: ['AuctionMachine', ':Deployer$', 'Factory$', 'JBTierRewardToken', 'MeowChainUtil', 'MeowCommonUtil', 'MeowGatewayUtil', ':PaymentProcessor$', ':TerminalProxy$', 'TraitsChainToken', 'TraitsGatewayToken', ':Token$', 'UnorderedToken'],
     },
     gasReporter: {
         enabled: process.env.REPORT_GAS !== undefined,
