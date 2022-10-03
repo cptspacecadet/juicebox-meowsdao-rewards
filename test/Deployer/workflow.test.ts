@@ -10,279 +10,372 @@ import tokenArtifact from '../../artifacts/contracts/Token.sol/Token.json';
 import unorderedTokenArtifact from '../../artifacts/contracts/UnorderedToken.sol/UnorderedToken.json';
 
 async function deployMockContractFromAddress(contractAddress: string, etherscanKey: string) {
-    const abi = await fetch(`https://api.etherscan.io/api?module=contract&action=getabi&address=${contractAddress}&apikey=${etherscanKey}`)
-        .then(response => response.json())
-        .then(data => JSON.parse(data['result']));
+  const abi = await fetch(
+    `https://api.etherscan.io/api?module=contract&action=getabi&address=${contractAddress}&apikey=${etherscanKey}`,
+  )
+    .then((response) => response.json())
+    .then((data) => JSON.parse(data['result']));
 
-    return smock.fake(abi, {address: contractAddress});
+  return smock.fake(abi, { address: contractAddress });
 }
 
 describe('Deployer Workflow Tests', () => {
-    let deployer: SignerWithAddress;
-    let accounts: SignerWithAddress[];
-    let contractDeployer: any;
-    let mockDirectory: any;
+  let deployer: SignerWithAddress;
+  let accounts: SignerWithAddress[];
+  let contractDeployer: any;
+  let mockDirectory: any;
 
-    before(async () => {
-        [deployer, ...accounts] = await ethers.getSigners();
+  before(async () => {
+    [deployer, ...accounts] = await ethers.getSigners();
 
-        mockDirectory = await smock.fake(jbDirectory.abi);
+    mockDirectory = await smock.fake(jbDirectory.abi);
 
-        const mockUniswapQuoter = await deployMockContractFromAddress('0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6', process.env.ETHERSCAN_KEY || '');
-        await mockUniswapQuoter.quoteExactInputSingle.returns('1211000000000000000000');
-        await mockUniswapQuoter.quoteExactOutputSingle.returns('1211000000000000000000');
+    const mockUniswapQuoter = await deployMockContractFromAddress(
+      '0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6',
+      process.env.ETHERSCAN_KEY || '',
+    );
+    await mockUniswapQuoter.quoteExactInputSingle.returns('1211000000000000000000');
+    await mockUniswapQuoter.quoteExactOutputSingle.returns('1211000000000000000000');
 
-        const auctionMachineFactoryFactory = await ethers.getContractFactory('AuctionMachineFactory', deployer);
-        const auctionMachineFactory = await auctionMachineFactoryFactory.connect(deployer).deploy();
+    const auctionMachineFactoryFactory = await ethers.getContractFactory(
+      'AuctionMachineFactory',
+      deployer,
+    );
+    const auctionMachineFactory = await auctionMachineFactoryFactory.connect(deployer).deploy();
 
-        const meowCommonUtilFactory = await ethers.getContractFactory('MeowCommonUtil', deployer);
-        const meowCommonUtilLibrary = await meowCommonUtilFactory.connect(deployer).deploy();
+    const meowCommonUtilFactory = await ethers.getContractFactory('MeowCommonUtil', deployer);
+    const meowCommonUtilLibrary = await meowCommonUtilFactory.connect(deployer).deploy();
 
-        const meowChainUtilFactory = await ethers.getContractFactory('MeowChainUtil', {
-            libraries: { MeowCommonUtil: meowCommonUtilLibrary.address },
-            signer: deployer
-        });
-        const meowChainUtilLibrary = await meowChainUtilFactory.connect(deployer).deploy();
-
-        const meowGatewayUtilFactory = await ethers.getContractFactory('MeowGatewayUtil', {
-            libraries: { MeowCommonUtil: meowCommonUtilLibrary.address },
-            signer: deployer
-        });
-        const meowGatewayUtilLibrary = await meowGatewayUtilFactory.connect(deployer).deploy();
-
-        const storageFactoryFactory = await ethers.getContractFactory('StorageFactory', deployer);
-        const storageFactory = await storageFactoryFactory.connect(deployer).deploy();
-
-        const traitsChainTokenFactoryFactory = await ethers.getContractFactory('TraitsChainTokenFactory', {
-            libraries: { MeowChainUtil: meowChainUtilLibrary.address },
-            signer: deployer
-        });
-        const traitsChainTokenFactory = await traitsChainTokenFactoryFactory.connect(deployer).deploy();
-
-        const traitsGatewayTokenFactoryFactory = await ethers.getContractFactory('TraitsGatewayTokenFactory', {
-            libraries: { MeowGatewayUtil: meowGatewayUtilLibrary.address },
-            signer: deployer
-        });
-        const traitsGatewayTokenFactory = await traitsGatewayTokenFactoryFactory.connect(deployer).deploy();
-
-        const tokenFactoryFactory = await ethers.getContractFactory('TokenFactory', deployer);
-        const tokenFactory = await tokenFactoryFactory.connect(deployer).deploy();
-
-        const unorderedTokenFactoryFactory = await ethers.getContractFactory('UnorderedTokenFactory', deployer);
-        const unorderedTokenFactory = await unorderedTokenFactoryFactory.connect(deployer).deploy();
-
-        const deployerFactory = await ethers.getContractFactory('Deployer', {
-            libraries: {
-                AuctionMachineFactory: auctionMachineFactory.address,
-                StorageFactory: storageFactory.address,
-                TraitsChainTokenFactory: traitsChainTokenFactory.address,
-                TraitsGatewayTokenFactory: traitsGatewayTokenFactory.address,
-                TokenFactory: tokenFactory.address,
-                UnorderedTokenFactory: unorderedTokenFactory.address
-            },
-            signer: deployer
-        });
-        contractDeployer = await deployerFactory
-            .connect(deployer)
-            .deploy();
+    const meowChainUtilFactory = await ethers.getContractFactory('MeowChainUtil', {
+      libraries: { MeowCommonUtil: meowCommonUtilLibrary.address },
+      signer: deployer,
     });
+    const meowChainUtilLibrary = await meowChainUtilFactory.connect(deployer).deploy();
 
-    it('Deploy a Token', async () => {
-        const name = 'Token';
-        const symbol = 'TKN';
-        const baseUri = '';
-        const contractUri = '';
-        const jbxProjectId = 99;
-        const maxSupply = 5;
-        const unitPrice = ethers.utils.parseEther('0.0125');
-        const mintAllowance = 5;
-        const mintPeriodStart = 0;
-        const mintPeriodEnd = 0;
-
-        let tx = await contractDeployer.connect(deployer).createToken(
-            name,
-            symbol,
-            baseUri,
-            contractUri,
-            jbxProjectId,
-            mockDirectory.address,
-            maxSupply,
-            unitPrice,
-            mintAllowance,
-            mintPeriodStart,
-            mintPeriodEnd,
-            accounts[0].address
-        );
-        let result = await tx.wait();
-        const tokenAddress = result.events?.filter((f: any) => f.event === 'Deployment')[0]['args']['contractAddress'].toString();
-
-        const tokenContract = new ethers.Contract(tokenAddress, unorderedTokenArtifact.abi, ethers.provider);
-
-        expect(await tokenContract.hasRole('0x0000000000000000000000000000000000000000000000000000000000000000', accounts[0].address)).to.equal(true);
+    const meowGatewayUtilFactory = await ethers.getContractFactory('MeowGatewayUtil', {
+      libraries: { MeowCommonUtil: meowCommonUtilLibrary.address },
+      signer: deployer,
     });
+    const meowGatewayUtilLibrary = await meowGatewayUtilFactory.connect(deployer).deploy();
 
-    it('Deploy an UnorderedToken', async () => {
-        const name = 'Token';
-        const symbol = 'TKN';
-        const baseUri = '';
-        const contractUri = '';
-        const jbxProjectId = 99;
-        const maxSupply = 5;
-        const unitPrice = ethers.utils.parseEther('0.0125');
-        const mintAllowance = 5;
-        const mintPeriodStart = 0;
-        const mintPeriodEnd = 0;
+    const storageFactoryFactory = await ethers.getContractFactory('StorageFactory', deployer);
+    const storageFactory = await storageFactoryFactory.connect(deployer).deploy();
 
-        let tx = await contractDeployer.connect(deployer).createUnorderedToken(
-            name,
-            symbol,
-            baseUri,
-            contractUri,
-            jbxProjectId,
-            mockDirectory.address,
-            maxSupply,
-            unitPrice,
-            mintAllowance,
-            mintPeriodStart,
-            mintPeriodEnd,
-            accounts[0].address
-        );
-        let result = await tx.wait();
-        const tokenAddress = result.events?.filter((f: any) => f.event === 'Deployment')[0]['args']['contractAddress'].toString();
+    const traitsChainTokenFactoryFactory = await ethers.getContractFactory(
+      'TraitsChainTokenFactory',
+      {
+        libraries: { MeowChainUtil: meowChainUtilLibrary.address },
+        signer: deployer,
+      },
+    );
+    const traitsChainTokenFactory = await traitsChainTokenFactoryFactory.connect(deployer).deploy();
 
-        const tokenContract = new ethers.Contract(tokenAddress, unorderedTokenArtifact.abi, ethers.provider);
+    const traitsGatewayTokenFactoryFactory = await ethers.getContractFactory(
+      'TraitsGatewayTokenFactory',
+      {
+        libraries: { MeowGatewayUtil: meowGatewayUtilLibrary.address },
+        signer: deployer,
+      },
+    );
+    const traitsGatewayTokenFactory = await traitsGatewayTokenFactoryFactory
+      .connect(deployer)
+      .deploy();
 
-        expect(await tokenContract.hasRole('0x0000000000000000000000000000000000000000000000000000000000000000', accounts[0].address)).to.equal(true);
+    const tokenFactoryFactory = await ethers.getContractFactory('TokenFactory', deployer);
+    const tokenFactory = await tokenFactoryFactory.connect(deployer).deploy();
 
-        tx = await tokenContract.connect(accounts[0]).mintFor(accounts[1].address);
-        result = await tx.wait();
+    const unorderedTokenFactoryFactory = await ethers.getContractFactory(
+      'UnorderedTokenFactory',
+      deployer,
+    );
+    const unorderedTokenFactory = await unorderedTokenFactoryFactory.connect(deployer).deploy();
 
-        const tokenId =  result.events?.filter((f: any) => f.event === 'Transfer')[0]['args']['id'].toString();
-        expect(await tokenContract.ownerOf(tokenId)).to.equal(accounts[1].address);
+    const deployerFactory = await ethers.getContractFactory('Deployer', {
+      libraries: {
+        AuctionMachineFactory: auctionMachineFactory.address,
+        StorageFactory: storageFactory.address,
+        TraitsChainTokenFactory: traitsChainTokenFactory.address,
+        TraitsGatewayTokenFactory: traitsGatewayTokenFactory.address,
+        TokenFactory: tokenFactory.address,
+        UnorderedTokenFactory: unorderedTokenFactory.address,
+      },
+      signer: deployer,
     });
+    contractDeployer = await deployerFactory.connect(deployer).deploy();
+  });
 
-    it('Deploy an AuctionMachine', async () => {
-        const name = 'Token';
-        const symbol = 'TKN';
-        const baseUri = '';
-        const contractUri = '';
-        const jbxProjectId = 99;
-        const maxSupply = 5;
-        const unitPrice = ethers.utils.parseEther('0.0125');
-        const mintAllowance = 5;
-        const mintPeriodStart = 0;
-        const mintPeriodEnd = 0;
+  it('Deploy a Token', async () => {
+    const name = 'Token';
+    const symbol = 'TKN';
+    const baseUri = '';
+    const contractUri = '';
+    const jbxProjectId = 99;
+    const maxSupply = 5;
+    const unitPrice = ethers.utils.parseEther('0.0125');
+    const mintAllowance = 5;
+    const mintPeriodStart = 0;
+    const mintPeriodEnd = 0;
 
-        let tx = await contractDeployer.connect(deployer).createToken(
-            name,
-            symbol,
-            baseUri,
-            contractUri,
-            jbxProjectId,
-            mockDirectory.address,
-            maxSupply,
-            unitPrice,
-            mintAllowance,
-            mintPeriodStart,
-            mintPeriodEnd,
-            accounts[0].address
-        );
-        let result = await tx.wait();
-        const tokenAddress = result.events?.filter((f: any) => f.event === 'Deployment')[0]['args']['contractAddress'].toString();
+    let tx = await contractDeployer
+      .connect(deployer)
+      .createToken(
+        name,
+        symbol,
+        baseUri,
+        contractUri,
+        jbxProjectId,
+        mockDirectory.address,
+        maxSupply,
+        unitPrice,
+        mintAllowance,
+        mintPeriodStart,
+        mintPeriodEnd,
+        accounts[0].address,
+      );
+    let result = await tx.wait();
+    const tokenAddress = result.events
+      ?.filter((f: any) => f.event === 'Deployment')[0]
+      ['args']['contractAddress'].toString();
 
-        const tokenContract = new ethers.Contract(tokenAddress, tokenArtifact.abi, ethers.provider);
+    const tokenContract = new ethers.Contract(
+      tokenAddress,
+      unorderedTokenArtifact.abi,
+      ethers.provider,
+    );
 
-        expect(await tokenContract.hasRole('0x0000000000000000000000000000000000000000000000000000000000000000', accounts[0].address)).to.equal(true);
+    expect(
+      await tokenContract.hasRole(
+        '0x0000000000000000000000000000000000000000000000000000000000000000',
+        accounts[0].address,
+      ),
+    ).to.equal(true);
+  });
 
-        const maxAuctions = 3;
-        const auctionDuration = 300;
-        tx = await contractDeployer.connect(accounts[0]).createAuctionMachine(
-            maxAuctions,
-            auctionDuration,
-            jbxProjectId,
-            mockDirectory.address,
-            tokenAddress,
-            accounts[1].address);
-        result = await tx.wait();
-        const auctionMachineAddress = result.events?.filter((f: any) => f.event === 'Deployment')[0]['args']['contractAddress'].toString();
+  it('Deploy an UnorderedToken', async () => {
+    const name = 'Token';
+    const symbol = 'TKN';
+    const baseUri = '';
+    const contractUri = '';
+    const jbxProjectId = 99;
+    const maxSupply = 5;
+    const unitPrice = ethers.utils.parseEther('0.0125');
+    const mintAllowance = 5;
+    const mintPeriodStart = 0;
+    const mintPeriodEnd = 0;
 
-        const auctionMachineContract = new ethers.Contract(auctionMachineAddress, auctionMachineArtifact.abi, ethers.provider);
+    let tx = await contractDeployer
+      .connect(deployer)
+      .createUnorderedToken(
+        name,
+        symbol,
+        baseUri,
+        contractUri,
+        jbxProjectId,
+        mockDirectory.address,
+        maxSupply,
+        unitPrice,
+        mintAllowance,
+        mintPeriodStart,
+        mintPeriodEnd,
+        accounts[0].address,
+      );
+    let result = await tx.wait();
+    const tokenAddress = result.events
+      ?.filter((f: any) => f.event === 'Deployment')[0]
+      ['args']['contractAddress'].toString();
 
-        expect(await auctionMachineContract.owner()).to.equal(accounts[1].address);
-    });
+    const tokenContract = new ethers.Contract(
+      tokenAddress,
+      unorderedTokenArtifact.abi,
+      ethers.provider,
+    );
 
-    it('Deploy a TraitsGatewayToken', async () => {
-        const name = 'Token';
-        const symbol = 'TKN';
-        const baseUri = '';
-        const contractUri = '';
-        const jbxProjectId = 99;
-        const maxSupply = 5;
-        const unitPrice = ethers.utils.parseEther('0.0125');
-        const mintAllowance = 5;
-        const ipfsGateway = 'https://.../';
-        const ipfsRoot = 'cid/';
+    expect(
+      await tokenContract.hasRole(
+        '0x0000000000000000000000000000000000000000000000000000000000000000',
+        accounts[0].address,
+      ),
+    ).to.equal(true);
 
-        let tx = await contractDeployer.connect(deployer).createTraitsGatewayToken(
-            name,
-            symbol,
-            baseUri,
-            contractUri,
-            jbxProjectId,
-            mockDirectory.address,
-            maxSupply,
-            unitPrice,
-            mintAllowance,
-            ipfsGateway,
-            ipfsRoot,
-            accounts[0].address
-        );
-        let result = await tx.wait();
-        const tokenAddress = result.events?.filter((f: any) => f.event === 'Deployment')[0]['args']['contractAddress'].toString();
+    tx = await tokenContract.connect(accounts[0]).mintFor(accounts[1].address);
+    result = await tx.wait();
 
-        const tokenContract = new ethers.Contract(tokenAddress, unorderedTokenArtifact.abi, ethers.provider);
+    const tokenId = result.events
+      ?.filter((f: any) => f.event === 'Transfer')[0]
+      ['args']['id'].toString();
+    expect(await tokenContract.ownerOf(tokenId)).to.equal(accounts[1].address);
+  });
 
-        expect(await tokenContract.hasRole('0x0000000000000000000000000000000000000000000000000000000000000000', accounts[0].address)).to.equal(true);
-    });
+  it('Deploy an AuctionMachine', async () => {
+    const name = 'Token';
+    const symbol = 'TKN';
+    const baseUri = '';
+    const contractUri = '';
+    const jbxProjectId = 99;
+    const maxSupply = 5;
+    const unitPrice = ethers.utils.parseEther('0.0125');
+    const mintAllowance = 5;
+    const mintPeriodStart = 0;
+    const mintPeriodEnd = 0;
 
-    it('Deploy a Storage', async () => {
-        let tx = await contractDeployer.connect(deployer).createStorage(accounts[0].address);
-        let result = await tx.wait();
-        const storageAddress = result.events?.filter((f: any) => f.event === 'Deployment')[0]['args']['contractAddress'].toString();
-    });
+    let tx = await contractDeployer
+      .connect(deployer)
+      .createToken(
+        name,
+        symbol,
+        baseUri,
+        contractUri,
+        jbxProjectId,
+        mockDirectory.address,
+        maxSupply,
+        unitPrice,
+        mintAllowance,
+        mintPeriodStart,
+        mintPeriodEnd,
+        accounts[0].address,
+      );
+    let result = await tx.wait();
+    const tokenAddress = result.events
+      ?.filter((f: any) => f.event === 'Deployment')[0]
+      ['args']['contractAddress'].toString();
 
-    it('Deploy a TraitsChainToken', async () => {
-        let tx = await contractDeployer.connect(deployer).createStorage(accounts[0].address);
-        let result = await tx.wait();
-        const storageAddress = result.events?.filter((f: any) => f.event === 'Deployment')[0]['args']['contractAddress'].toString();
+    const tokenContract = new ethers.Contract(tokenAddress, tokenArtifact.abi, ethers.provider);
 
-        const name = 'Token';
-        const symbol = 'TKN';
-        const baseUri = '';
-        const contractUri = '';
-        const jbxProjectId = 99;
-        const maxSupply = 5;
-        const unitPrice = ethers.utils.parseEther('0.0125');
-        const mintAllowance = 5;
+    expect(
+      await tokenContract.hasRole(
+        '0x0000000000000000000000000000000000000000000000000000000000000000',
+        accounts[0].address,
+      ),
+    ).to.equal(true);
 
-        tx = await contractDeployer.connect(deployer).createTraitsChainToken(
-            name,
-            symbol,
-            baseUri,
-            contractUri,
-            jbxProjectId,
-            mockDirectory.address,
-            maxSupply,
-            unitPrice,
-            mintAllowance,
-            storageAddress,
-            accounts[0].address
-        );
-        result = await tx.wait();
-        const tokenAddress = result.events?.filter((f: any) => f.event === 'Deployment')[0]['args']['contractAddress'].toString();
+    const maxAuctions = 3;
+    const auctionDuration = 300;
+    tx = await contractDeployer
+      .connect(accounts[0])
+      .createAuctionMachine(
+        maxAuctions,
+        auctionDuration,
+        jbxProjectId,
+        mockDirectory.address,
+        tokenAddress,
+        accounts[1].address,
+      );
+    result = await tx.wait();
+    const auctionMachineAddress = result.events
+      ?.filter((f: any) => f.event === 'Deployment')[0]
+      ['args']['contractAddress'].toString();
 
-        const tokenContract = new ethers.Contract(tokenAddress, unorderedTokenArtifact.abi, ethers.provider);
+    const auctionMachineContract = new ethers.Contract(
+      auctionMachineAddress,
+      auctionMachineArtifact.abi,
+      ethers.provider,
+    );
 
-        expect(await tokenContract.hasRole('0x0000000000000000000000000000000000000000000000000000000000000000', accounts[0].address)).to.equal(true);
-    });
+    expect(await auctionMachineContract.owner()).to.equal(accounts[1].address);
+  });
+
+  it('Deploy a TraitsGatewayToken', async () => {
+    const name = 'Token';
+    const symbol = 'TKN';
+    const baseUri = '';
+    const contractUri = '';
+    const jbxProjectId = 99;
+    const maxSupply = 5;
+    const unitPrice = ethers.utils.parseEther('0.0125');
+    const mintAllowance = 5;
+    const ipfsGateway = 'https://.../';
+    const ipfsRoot = 'cid/';
+
+    let tx = await contractDeployer
+      .connect(deployer)
+      .createTraitsGatewayToken(
+        name,
+        symbol,
+        baseUri,
+        contractUri,
+        jbxProjectId,
+        mockDirectory.address,
+        maxSupply,
+        unitPrice,
+        mintAllowance,
+        ipfsGateway,
+        ipfsRoot,
+        accounts[0].address,
+      );
+    let result = await tx.wait();
+    const tokenAddress = result.events
+      ?.filter((f: any) => f.event === 'Deployment')[0]
+      ['args']['contractAddress'].toString();
+
+    const tokenContract = new ethers.Contract(
+      tokenAddress,
+      unorderedTokenArtifact.abi,
+      ethers.provider,
+    );
+
+    expect(
+      await tokenContract.hasRole(
+        '0x0000000000000000000000000000000000000000000000000000000000000000',
+        accounts[0].address,
+      ),
+    ).to.equal(true);
+  });
+
+  it('Deploy a Storage', async () => {
+    let tx = await contractDeployer.connect(deployer).createStorage(accounts[0].address);
+    let result = await tx.wait();
+    const storageAddress = result.events
+      ?.filter((f: any) => f.event === 'Deployment')[0]
+      ['args']['contractAddress'].toString();
+  });
+
+  it('Deploy a TraitsChainToken', async () => {
+    let tx = await contractDeployer.connect(deployer).createStorage(accounts[0].address);
+    let result = await tx.wait();
+    const storageAddress = result.events
+      ?.filter((f: any) => f.event === 'Deployment')[0]
+      ['args']['contractAddress'].toString();
+
+    const name = 'Token';
+    const symbol = 'TKN';
+    const baseUri = '';
+    const contractUri = '';
+    const jbxProjectId = 99;
+    const maxSupply = 5;
+    const unitPrice = ethers.utils.parseEther('0.0125');
+    const mintAllowance = 5;
+
+    tx = await contractDeployer
+      .connect(deployer)
+      .createTraitsChainToken(
+        name,
+        symbol,
+        baseUri,
+        contractUri,
+        jbxProjectId,
+        mockDirectory.address,
+        maxSupply,
+        unitPrice,
+        mintAllowance,
+        storageAddress,
+        accounts[0].address,
+      );
+    result = await tx.wait();
+    const tokenAddress = result.events
+      ?.filter((f: any) => f.event === 'Deployment')[0]
+      ['args']['contractAddress'].toString();
+
+    const tokenContract = new ethers.Contract(
+      tokenAddress,
+      unorderedTokenArtifact.abi,
+      ethers.provider,
+    );
+
+    expect(
+      await tokenContract.hasRole(
+        '0x0000000000000000000000000000000000000000000000000000000000000000',
+        accounts[0].address,
+      ),
+    ).to.equal(true);
+  });
 });

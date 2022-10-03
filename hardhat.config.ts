@@ -1,19 +1,19 @@
-import * as dotenv from "dotenv";
+import * as dotenv from 'dotenv';
 
-import { HardhatUserConfig, task } from "hardhat/config";
-import "@nomiclabs/hardhat-etherscan";
-import "@nomiclabs/hardhat-waffle";
-import "@typechain/hardhat";
-import "hardhat-gas-reporter";
+import { HardhatUserConfig, task } from 'hardhat/config';
+import '@nomiclabs/hardhat-etherscan';
+import '@nomiclabs/hardhat-waffle';
+import '@typechain/hardhat';
+import 'hardhat-gas-reporter';
 import 'hardhat-contract-sizer';
-import "solidity-coverage";
+import 'solidity-coverage';
 import 'solidity-docgen';
 
 dotenv.config();
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
-task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
+task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
     const accounts = await hre.ethers.getSigners();
 
     for (const account of accounts) {
@@ -29,13 +29,13 @@ const defaultNetwork = 'hardhat';
 
 const config: HardhatUserConfig = {
     solidity: {
-        version: "0.8.6",
+        version: '0.8.6',
         settings: {
             optimizer: {
                 enabled: true,
                 runs: 400,
             },
-        },
+        }
     },
     defaultNetwork,
     networks: {
@@ -58,22 +58,34 @@ const config: HardhatUserConfig = {
         disambiguatePaths: false,
         runOnCompile: true,
         strict: false,
-        only: ['AuctionMachine', ':Deployer$', 'Factory$', 'JBTierRewardToken', 'MeowChainUtil', 'MeowCommonUtil', 'MeowGatewayUtil', ':PaymentProcessor$', ':TerminalProxy$', 'TraitsChainToken', 'TraitsGatewayToken', ':Token$', 'UnorderedToken'],
+        // only: [
+        //   'AuctionMachine',
+        //   ':Deployer$',
+        //   'Factory$',
+        //   'JBTierRewardToken',
+        //   'MeowChainUtil',
+        //   'MeowCommonUtil',
+        //   'MeowGatewayUtil',
+        //   'TraitsChainToken',
+        //   'TraitsGatewayToken',
+        //   ':Token$',
+        //   'UnorderedToken',
+        // ],
     },
     gasReporter: {
         enabled: process.env.REPORT_GAS !== undefined,
         currency: 'USD',
         gasPrice: 30,
         showTimeSpent: true,
-        coinmarketcap: `${process.env.COINMARKETCAP_KEY}`
+        coinmarketcap: `${process.env.COINMARKETCAP_KEY}`,
     },
     etherscan: {
         apiKey: `${process.env.ETHERSCAN_KEY}`,
     },
     mocha: {
-        timeout: 30 * 60 * 1000
+        timeout: 30 * 60 * 1000,
     },
-    docgen: {}
+    docgen: {},
 };
 
 export default config;
